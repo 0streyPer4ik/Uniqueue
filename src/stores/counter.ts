@@ -13,12 +13,9 @@ export const useCounterStore = defineStore('counter', () => {
 
 export const questionStore = defineStore('question', {
   state: () => ({
-    list: {
-      a: "Вопрос номер 1",
-      a1: "Вопрос номер 2",
-      a2: "Вопрос номер 3",
-      b: "Вопрос номер 4",
-    }
+    list: [
+
+    ]
   }),
   getters: {
     getQuestions(state){

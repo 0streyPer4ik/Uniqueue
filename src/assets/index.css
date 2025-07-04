@@ -1,0 +1,27 @@
+.question .grid {
+  display: grid;
+  gap: 10px;
+}
+.question .item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px;
+}
+.question .item2 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px;
+  margin-bottom: 15px;
+}
+.question .grid-container {
+  display: flex;
+}
+.question .grid-column {
+  flex: 1;
+  margin-right: 20px;
+}
+.question .text {
+  font-size: 20px;
+}/*# sourceMappingURL=index.css.map */
