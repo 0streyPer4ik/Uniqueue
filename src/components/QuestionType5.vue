@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import { ref, onMounted, nextTick, watch } from 'vue'
 import { ElInput } from 'element-plus'
 
 interface QDataContent {
-  description: string
+  description?: string
   correctAnswer: string[]
 }
 
 interface QData {
   id: number
-  description: string
+  description?: string
   correctAnswer: string[]
   content: QDataContent
   id_question_type: number
@@ -20,16 +20,20 @@ const props = defineProps<{
   qData: QData
 }>()
 
-const emit = defineEmits(['answer-submitted'])
+const emit = defineEmits<{
+  (e: 'update:userAnswer', value: string | null): void
+  (e: 'answer-submitted', value: boolean | null): void
+}>()
 
 const inputWidth = ref('200px')
 const hasUserInteracted = ref(false)
+const localUserAnswer = ref(props.qData.userAnswer)
 
 const checkAnswer = (newVal: string | null | undefined, oldVal: string | null | undefined) => {
-  // Игнорируем первое присваивание (undefined -> null)
   if (oldVal === undefined && newVal === null) return
 
   hasUserInteracted.value = true
+  emit('update:userAnswer', newVal || null)
 
   if (newVal?.trim()) {
     const userAnswer = newVal.toLowerCase().trim()
@@ -38,13 +42,14 @@ const checkAnswer = (newVal: string | null | undefined, oldVal: string | null | 
     )
     emit('answer-submitted', isCorrect)
   } else {
-    // Если ответ очищен, считаем вопрос неотвеченным
     emit('answer-submitted', null)
   }
 }
 
-// Наблюдаем за изменениями userAnswer
-watch(() => props.qData.userAnswer, checkAnswer)
+watch(localUserAnswer, checkAnswer)
+watch(() => props.qData.userAnswer, (val) => {
+  localUserAnswer.value = val
+})
 
 onMounted(() => {
   nextTick(() => {
@@ -54,21 +59,30 @@ onMounted(() => {
 })
 </script>
 
+<script lang="ts">
+export default {
+  name: 'QuestionType5Component'
+}
+</script>
+
 <template>
   <div class="question-container">
     <div class="question-text">
-      <template v-for="(part, index) in qData.content.description.split(/(_{5,})/)" :key="index">
-        <ElInput
-          v-if="part.match(/_{5,}/)"
-          v-model="qData.userAnswer"
-          :style="{ width: inputWidth }"
-          placeholder="Введите ответ"
-          clearable
-          class="inline-input"
-          @input="hasUserInteracted = true"
-        />
-        <span v-else>{{ part }}</span>
+      <template v-if="qData.content.description">
+        <template v-for="(part, index) in qData.content.description.split(/(_{5,})/)" :key="index">
+          <ElInput
+            v-if="part.match(/_{5,}/)"
+            v-model="localUserAnswer"
+            :style="{ width: inputWidth }"
+            placeholder="Введите ответ"
+            clearable
+            class="inline-input"
+            @input="hasUserInteracted = true"
+          />
+          <span v-else>{{ part }}</span>
+        </template>
       </template>
+      <span v-else>Описание вопроса отсутствует</span>
     </div>
   </div>
 </template>
@@ -111,6 +125,5 @@ onMounted(() => {
   .question-container {
     margin-left: 0;
   }
-
 }
 </style>

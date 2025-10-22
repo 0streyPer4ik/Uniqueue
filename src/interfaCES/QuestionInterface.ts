@@ -31,8 +31,8 @@ export interface QDataContentMatching {
 
 export interface Question {
   id: number;
-  id_question_type: number; // Добавлено
-  content: QDataContentSingleChoice | QDataContentMatching;  // Изменено:  Используйте Union Type
-  id_subject: number; // Добавлено
+  id_question_type: number;
+  content: QDataContentSingleChoice | QDataContentMatching;
+  id_subject: number;
   additionalText?: string;
 }

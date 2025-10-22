@@ -3,7 +3,7 @@
 ///////////////////////////
 
 import './assets/main.css'
-
+import axios from 'axios'
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 
@@ -16,6 +16,7 @@ import locale from "element-plus/es/locale/lang/ru"
 import "dayjs/locale/ru"
 import * as ElementPlusIconsVue from "@element-plus/icons-vue"
 
+axios.defaults.baseURL = 'https://akit-testing.ocooler.com/api/'
 const app = createApp(App)
 
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {

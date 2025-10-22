@@ -2,18 +2,28 @@
 import { Options, Vue } from "vue-class-component"
 import { ArrowUp, ArrowDown } from "@element-plus/icons-vue"
 
+interface QDataContent {
+  description?: string
+  qDescription?: string[]
+  correctAnswer?: string[]
+  answersType3: AnswerType3[]
+}
+
 interface AnswerType3 {
   text: string
   correctPosition: number
 }
 
+interface QDataContent {
+  description?: string
+  qDescription?: string[]
+  answersType3: AnswerType3[]
+}
+
 interface QData {
   id: number
   id_question_type: number
-  content: {
-    description: string
-    answersType3: AnswerType3[]
-  };
+  content: QDataContent
   id_subject: number
 }
 
@@ -36,30 +46,57 @@ interface QData {
     }
   }
 })
-export default class QuestionType3Component extends Vue {
+
+class QuestionType3Component extends Vue {
   qData!: QData
   isAnimating = false
   movingItems: {index: number, direction: number, state: 'animating' | 'complete'}[] = []
-  shuffledAnswers: AnswerType3[] = []
-  hasUserInteracted = false // Флаг для отслеживания взаимодействия пользователя
+  shuffledAnswers: {text: string, originalIndex: number}[] = [] // Changed structure
+  hasUserInteracted = false
 
   created() {
-    this.shuffleAnswers()
+      this.prepareAndShuffleAnswers()
   }
 
-  shuffleAnswers() {
-    this.shuffledAnswers = [...this.qData.content.answersType3]
-    for (let i = this.shuffledAnswers.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [this.shuffledAnswers[i], this.shuffledAnswers[j]] =
-        [this.shuffledAnswers[j], this.shuffledAnswers[i]]
-    }
+  prepareAndShuffleAnswers() {
+  if (!this.qData?.content?.answersType3 || !Array.isArray(this.qData.content.answersType3)) {
+    console.error('Invalid answers data', this.qData?.content)
+    this.shuffledAnswers = []
+    return
   }
+
+  this.shuffledAnswers = this.qData.content.answersType3.map(item => ({
+    text: item.text,
+    originalIndex: item.correctPosition
+  }))
+
+  for (let i = this.shuffledAnswers.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [this.shuffledAnswers[i], this.shuffledAnswers[j]] =
+      [this.shuffledAnswers[j], this.shuffledAnswers[i]]
+  }
+}
+
+//   shuffleAnswers() {
+//   if (!this.qData?.content?.answersType3 || !Array.isArray(this.qData.content.answersType3)) {
+//     console.error('answersType3 is not available or not an array', this.qData.content)
+//     this.shuffledAnswers = []
+//     return
+//   }
+
+//   this.shuffledAnswers = [...this.qData.content.answersType3]
+
+//   for (let i = this.shuffledAnswers.length - 1; i > 0; i--) {
+//     const j = Math.floor(Math.random() * (i + 1));
+//     [this.shuffledAnswers[i], this.shuffledAnswers[j]] =
+//       [this.shuffledAnswers[j], this.shuffledAnswers[i]]
+//   }
+// }
 
   async moveItem(index: number, direction: number) {
     if (this.isAnimating) return
 
-    this.hasUserInteracted = true // Пользователь взаимодействовал с ответами
+    this.hasUserInteracted = true
     const newIndex = index + direction
     if (newIndex < 0 || newIndex >= this.shuffledAnswers.length) return
 
@@ -90,31 +127,29 @@ export default class QuestionType3Component extends Vue {
   }
 
   checkAnswer() {
-    if (!this.hasUserInteracted) {
-      // Если пользователь не взаимодействовал с ответами, не отправляем результат
+    if (!this.hasUserInteracted || this.shuffledAnswers.length === 0) {
       this.$emit('answer-submitted', null)
       return
     }
 
-    let allCorrect = true;
-    for (let i = 0; i < this.shuffledAnswers.length; i++) {
-      if (i !== this.shuffledAnswers[i].correctPosition) {
-        allCorrect = false;
-        break
-      }
-    }
+    const allCorrect = this.shuffledAnswers.every(
+      (answer, currentIndex) => answer.originalIndex === currentIndex
+    )
 
     this.$emit('answer-submitted', allCorrect)
   }
+
 }
+
+export default QuestionType3Component
 </script>
 
 <template>
   <div>
-    <div class="description">
+    <div class="description" v-if="qData.content.description">
       {{ qData.content.description }}
     </div>
-    <el-row>
+    <el-row v-if="shuffledAnswers.length > 0">
       <el-col :lg="24">
         <div class="answers-container">
           <div
@@ -159,6 +194,7 @@ export default class QuestionType3Component extends Vue {
         </div>
       </el-col>
     </el-row>
+      <el-alert v-else type="error" title="No answers available" :closable="false" />
   </div>
   <br>
 </template>
@@ -218,8 +254,6 @@ export default class QuestionType3Component extends Vue {
   font-size: 18px !important;
 }
 
-
-/* Для мобильных устройств */
 @media (min-width: 320px) and (max-width: 768px) {
   .answer-buttons {
     position: static;
