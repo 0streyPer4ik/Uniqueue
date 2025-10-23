@@ -1,6 +1,5 @@
 <script lang="ts">
 import { Options, Vue } from "vue-class-component";
-import type { Question } from "@/interfaCES/QuestionInterface";
 
 interface Answer {
   text: string
@@ -8,46 +7,33 @@ interface Answer {
 }
 
 interface QDataContent {
-  description: string | null
-  answers: Answer[]
+  description?: string
+  answers?: Answer[]
 }
 
 interface QData {
-  content: QDataContent | null
-  answer: string | null
-  answers: Answer[]
-  correctAnswers: number[]
+  id: number
+  content: QDataContent
+  showResults?: boolean
 }
 
 @Options({
   props: {
     qData: {
-      type: Object as () => QData | undefined,
-      required: false,
-      default: () => ({
-        content: { description: null, answers: [] },
-        answer: null,
-        answers: [],
-        correctAnswers: [],
-      }),
-    },
+      type: Object as () => QData,
+      required: true
+    }
   },
   emits: ['answer-submitted'],
   watch: {
     'qData.content.answers': {
       handler: 'shuffleAnswers',
       immediate: true
-    },
-    selectedAnswer: {
-      handler: 'submitAnswer',
-      immediate: false
     }
   }
 })
-export default class QuestionType1Component extends Vue {
+class QuestionType1Component extends Vue {
   qData!: QData
-  questions: Question[] = []
-  currentQuestionIndex: number = 0
   selectedAnswer: number | null = null
   shuffledAnswers: Answer[] = []
 
@@ -56,34 +42,34 @@ export default class QuestionType1Component extends Vue {
   }
 
   shuffleAnswers() {
-    if (this.qData && this.qData.content && this.qData.content.answers) {
+    if (this.qData.content?.answers) {
       this.shuffledAnswers = [...this.qData.content.answers]
         .map(value => ({ value, sort: Math.random() }))
         .sort((a, b) => a.sort - b.sort)
         .map(({ value }) => value)
-    } else {
-      this.shuffledAnswers = []
     }
   }
 
   submitAnswer() {
-    if (this.selectedAnswer === null || !this.qData?.content) return
+    if (this.selectedAnswer === null || !this.qData.content?.answers) return
 
-    const isCorrect = this.shuffledAnswers[this.selectedAnswer].isCorrect
+    const isCorrect = this.shuffledAnswers[this.selectedAnswer]?.isCorrect ?? false
     this.$emit('answer-submitted', isCorrect)
   }
 }
+export default QuestionType1Component
 </script>
 
 <template>
-  <div v-if="qData && qData.content" class="question-container">
+  <div v-if="qData.content" class="question-container">
     <div class="description">
-      <pre class="question-text">{{ qData.content.description.trim() }}</pre>
+      <pre class="question-text">{{ qData.content.description?.trim() || '' }}</pre>
     </div>
     <el-radio-group
       v-model="selectedAnswer"
       class="answers-group"
       size="large"
+      @change="submitAnswer"
     >
       <el-radio-button
         v-for="(answer, index) in shuffledAnswers"

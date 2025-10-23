@@ -2,6 +2,7 @@
 import { Options, Vue } from "vue-class-component"
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import type { MessageParams } from 'element-plus'
 
 interface QDataContent {
     description: string
@@ -39,10 +40,33 @@ interface Subject {
     name_subject: string
 }
 
+const MessageComponent = {
+  template: '<div></div>',
+  methods: {
+    show(options: MessageParams | string) {
+      return ElMessage(options)
+    },
+    success(message: string) {
+      return ElMessage.success(message)
+    },
+    warning(message: string) {
+      return ElMessage.warning(message)
+    },
+    error(message: string) {
+      return ElMessage.error(message)
+    },
+    info(message: string) {
+      return ElMessage.info(message)
+    }
+  }
+}
+
 @Options({
-    components: { ElMessage },
+  components: {
+    ElMessage: MessageComponent
+  }
 })
-export default class QuestionParserComponent extends Vue {
+class QuestionParserComponent extends Vue {
     inputText: string = ''
     matchingData: { qDescription: string[], answersType2: AnswerType2[] } = {
         qDescription: ['', '', '', ''],
@@ -70,24 +94,30 @@ export default class QuestionParserComponent extends Vue {
 
     subjects: Subject[] = []
 
+    updateSequencePosition(index: number, value: number) {
+        if (this.sequenceData.answersType3[index]) {
+            this.sequenceData.answersType3[index].correctPosition = value;
+        }
+    }
+
     mounted() {
         this.fetchSubjects()
     }
 
     addAnswer() {
-        if (this.question && this.question.content && this.question.content.answers) {
+        if (this.question?.content?.answers) {
             this.question.content.answers.push({ text: "", isCorrect: false })
         }
     }
 
     removeAnswer(index: number) {
-        if (this.question && this.question.content && this.question.content.answers) {
+        if (this.question?.content?.answers) {
             this.question.content.answers.splice(index, 1)
         }
     }
 
     resetCorrectAnswers() {
-        if (this.question && this.question.content && this.question.content.answers) {
+        if (this.question?.content?.answers) {
             this.question.content.answers.forEach(answer => {
                 answer.isCorrect = false
             });
@@ -126,101 +156,116 @@ export default class QuestionParserComponent extends Vue {
 
     async fetchSubjects() {
         try {
-            const response = await axios.get<Subject[]>('http://test.local/subjects')
+            const response = await axios.get<Subject[]>('/subjects')
             this.subjects = response.data
             console.log('Fetched Subjects:', this.subjects)
         } catch (error) {
             console.error('Ошибка при загрузке предметов:', error)
+            ElMessage({
+                message: 'Ошибка при загрузке предметов',
+                type: 'error',
+            } as MessageParams)
         }
     }
 
     saveQuestion() {
-        if (this.question && this.question.content) {
-            let contentToSave
+        if (!this.question?.content) return;
 
-            if (this.question.id_question_type === 1) {
-                const answersToSave = this.question.content.answers.map(answer => ({
-                    text: answer.text,
-                    isCorrect: answer.isCorrect,
-                }));
+        let contentToSave;
 
-                contentToSave = {
-                    ...this.question.content,
-                    answers: answersToSave,
-                };
-            } else if (this.question.id_question_type === 2) {
-                contentToSave = {
-                    description: this.question.content.description,
-                    qDescription: this.matchingData.qDescription,
-                    answersType2: this.matchingData.answersType2,
-                };
-            } else if (this.question.id_question_type === 3) {
-                const answersType3ToSave = this.sequenceData.answersType3.map(answer => ({
-                    ...answer,
-                    correctPosition: answer.correctPosition - 1
-                }));
+        if (this.question.id_question_type === 1 && this.question.content.answers) {
+            const answersToSave = this.question.content.answers.map(answer => ({
+                text: answer.text,
+                isCorrect: answer.isCorrect,
+            }));
 
-                contentToSave = {
-                    description: this.question.content.description,
-                    answersType3: answersType3ToSave,
-                };
-            } else if (this.question.id_question_type === 4) {
+            contentToSave = {
+                ...this.question.content,
+                answers: answersToSave,
+            };
+        } else if (this.question.id_question_type === 2) {
+            contentToSave = {
+                description: this.question.content.description,
+                qDescription: this.matchingData.qDescription,
+                answersType2: this.matchingData.answersType2,
+            };
+        } else if (this.question.id_question_type === 3) {
+            const answersType3ToSave = this.sequenceData.answersType3.map(answer => ({
+                ...answer,
+                correctPosition: answer.correctPosition - 1
+            }));
+
+            contentToSave = {
+                description: this.question.content.description,
+                answersType3: answersType3ToSave,
+            };
+        } else if (this.question.id_question_type === 4) {
             contentToSave = {
                 description: this.question.content.description,
                 correctAnswer: this.question.content.correctAnswer,
             };
-          } else if (this.question.id_question_type === 5) {
+        } else if (this.question.id_question_type === 5) {
             contentToSave = {
                 description: this.question.content.description,
                 correctAnswer: this.question.content.correctAnswer,
             };
-          }
+        }
 
-            const newQuestion = {
-                ...this.question,
-                content: JSON.stringify(contentToSave),
+        const newQuestion = {
+            ...this.question,
+            content: JSON.stringify(contentToSave),
+        };
+
+        axios.post('/questions', newQuestion)
+            .then(response => {
+                console.log('Вопрос создан', response)
+                ElMessage({
+                    message: 'Успешно создано!',
+                    type: 'success',
+                } as MessageParams);
+
+                // Сброс формы
+                this.resetForm();
+            })
+            .catch(error => {
+                console.error('Ошибка!', error);
+                ElMessage({
+                    message: 'Ошибка при создании!',
+                    type: 'error',
+                } as MessageParams)
+            })
+    }
+
+    // Добавлен метод для сброса формы
+    resetForm() {
+        this.inputText = '';
+        this.question.content.description = "";
+
+        if (this.question.id_question_type === 1) {
+            this.question.content.answers = [
+                { text: "", isCorrect: false },
+                { text: "", isCorrect: false },
+                { text: "", isCorrect: false },
+                { text: "", isCorrect: false },
+            ];
+        } else if (this.question.id_question_type === 2) {
+            this.matchingData = {
+                qDescription: ['', '', '', ''],
+                answersType2: [{ text: '', matches: '' }, { text: '', matches: '' }, { text: '', matches: '' }, { text: '', matches: '' }]
             };
-
-
-            axios.post('http://test.local/questions', newQuestion)
-                .then(response => {
-                    console.log('Вопрос создан', response)
-                    ElMessage({
-                        message: 'Успешно создано!',
-                        type: 'success',
-                    });
-
-                    if (this.question.id_question_type === 1) {
-                        this.question.content.description = ""
-                        this.question.content.answers = [
-                            { text: "", isCorrect: false },
-                            { text: "", isCorrect: false },
-                            { text: "", isCorrect: false },
-                            { text: "", isCorrect: false },
-                        ];
-                    } else if (this.question.id_question_type === 2) {
-                        this.question.content.description = ""
-                        this.matchingData = {
-                            qDescription: ['', '', '', ''],
-                            answersType2: [{ text: '', matches: '' }, { text: '', matches: '' }, { text: '', matches: '' }, { text: '', matches: '' }]
-                        };
-                    } else if (this.question.id_question_type === 3) {
-                        this.question.content.description = "";
-                        this.sequenceData = {
-                            answersType3: [{ text: '', correctPosition: 1 }, { text: '', correctPosition: 1 }, { text: '', correctPosition: 1 }, { text: '', correctPosition: 1 }]
-                        }
-                    }
-
-                    this.inputText = ''
-
-                })
-                .catch(error => {
-                    console.error('Ошибка!', error);
-                    ElMessage({
-                        message: 'Ошибка при создании!',
-                        type: 'error',
-                    })
-                })
+        } else if (this.question.id_question_type === 3) {
+            this.sequenceData = {
+                answersType3: [
+                    { text: '', correctPosition: 1 },
+                    { text: '', correctPosition: 2 },
+                    { text: '', correctPosition: 3 },
+                    { text: '', correctPosition: 4 }
+                ]
+            };
+        } else if (this.question.id_question_type === 4) {
+            this.question.content.correctAnswer = '';
+        } else if (this.question.id_question_type === 5) {
+            this.question.content.correctAnswer = [];
         }
     }
 
@@ -250,12 +295,11 @@ parseText() {
         if (correctAnswerLine) {
             const correctAnswerLetter = correctAnswerLine.split(':')[1].trim()
 
-            this.question.content.answers.forEach((answer, index) => {
-                const answerLine = lines.find(line => line.startsWith(correctAnswerLetter + ')'))
-
-                if (answerLine && answerLine.split(')')[1].trim() === answer.text) {
-                    answer.isCorrect = true
-                }
+            this.question.content.answers.forEach((answer) => {
+              const answerLine = lines.find(line => line.startsWith(correctAnswerLetter + ')'))
+              if (answerLine && answerLine.split(')')[1].trim() === answer.text) {
+                  answer.isCorrect = true
+              }
             })
         }
     } else if (this.question.id_question_type === 2) {
@@ -507,6 +551,7 @@ parseText() {
     }
 
 }
+export default QuestionParserComponent
 </script>
 
 <template>
@@ -579,10 +624,15 @@ parseText() {
         <div v-else-if="question.id_question_type === 3">
             <div v-for="(answer, index) in sequenceData.answersType3" :key="index">
                 <el-input v-model="answer.text" placeholder="Текст элемента" style="width: 60%; margin-right: 10px;"></el-input>
-                <el-input-number v-model="answer.correctPosition" :min="1" :max="sequenceData.answersType3.length" @change="(value) => updateSequencePosition(index, value)" placeholder="Позиция" style="width: 20%; margin-right: 10px;"></el-input-number>
+                <el-input-number
+                  v-model="sequenceData.answersType3[index].correctPosition"
+                  :min="1"
+                  :max="sequenceData.answersType3.length"
+                  placeholder="Позиция"
+                  style="width: 20%; margin-right: 10px;">
+                </el-input-number>
                 <el-button @click="removeSequenceAnswer(index)" type="danger" size="small">Удалить</el-button>
-            </div>
-            <br>
+            </div><br>
             <el-button @click="addSequenceAnswer">Добавить элемент</el-button>
             <el-button @click="resetSequenceAnswers">Сбросить порядок</el-button>
         </div>

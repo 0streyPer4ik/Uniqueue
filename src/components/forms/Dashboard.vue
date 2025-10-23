@@ -7,11 +7,9 @@ interface Subject {
   name_subject: string
 }
 
-interface Question {
-  id: number
-  id_question_type: number
-  id_subject: number
-  content: QDataContent
+interface Answer {
+  text: string
+  isCorrect: boolean
 }
 
 interface QDataContent {
@@ -19,9 +17,18 @@ interface QDataContent {
   answers: Answer[]
 }
 
-interface Answer {
-  text: string
-  isCorrect: boolean
+interface Question {
+  id: number
+  id_question_type: number
+  id_subject: number
+  content: QDataContent
+}
+
+interface ApiQuestion {
+  id: number
+  id_question_type: number
+  id_subject: number
+  content: string
 }
 
 @Options({
@@ -35,108 +42,114 @@ interface Answer {
   },
   computed: {
     questionTypes(): string[] {
-      if (this.questions && this.questions.length > 0) {
-        const questionTypes = [...new Set(this.questions.map(q => q.id_question_type.toString()))]
-        console.log('Question Types:', questionTypes)
-        return questionTypes
-      } else {
-        console.log('Question Types: (No questions loaded yet)')
-        return []
+      if (this.questions?.length) {
+        const questionTypes = Array.from(
+          new Set(this.questions.map((q: Question) => q.id_question_type.toString()))
+        ) as string[];
+        console.log('Question Types:', questionTypes);
+        return questionTypes;
       }
+      console.log('Question Types: (No questions loaded yet)');
+      return [];
     },
     filteredQuestions(): Question[] {
-      if (this.questions && this.questions.length > 0) {
-        let filtered = [...this.questions]
-
-        console.log('Selected Question Type:', this.selectedQuestionType, typeof this.selectedQuestionType)
-        console.log('Selected Subject:', this.selectedSubject, typeof this.selectedSubject)
-
-        if (this.selectedQuestionType) {
-          filtered = filtered.filter(q => {
-            console.log('Question id_question_type:', q.id_question_type, typeof q.id_question_type)
-            return q.id_question_type === Number(this.selectedQuestionType)
-          });
-        }
-
-        if (this.selectedSubject) {
-          filtered = filtered.filter(q => q.id_subject === this.selectedSubject)
-        }
-
-        console.log('Filtered Questions:', filtered)
-        return filtered
-      } else {
-        console.log('Filtered Questions: (No questions loaded yet)')
+      if (!this.questions?.length) {
+        console.log('Filtered Questions: (No questions loaded yet)');
         return [];
       }
+
+      let filtered = [...this.questions];
+
+      console.log('Selected Question Type:', this.selectedQuestionType, typeof this.selectedQuestionType);
+      console.log('Selected Subject:', this.selectedSubject, typeof this.selectedSubject);
+
+      if (this.selectedQuestionType) {
+        filtered = filtered.filter(q => {
+          console.log('Question id_question_type:', q.id_question_type, typeof q.id_question_type);
+          return q.id_question_type === Number(this.selectedQuestionType);
+        });
+      }
+
+      if (this.selectedSubject) {
+        filtered = filtered.filter(q => q.id_subject === this.selectedSubject);
+      }
+
+      console.log('Filtered Questions:', filtered);
+      return filtered;
     },
   },
   mounted() {
-    this.fetchQuestions()
-    this.fetchSubjects()
+    this.fetchQuestions();
+    this.fetchSubjects();
   },
   methods: {
     async fetchQuestions() {
       try {
-        const response = await axios.get<any[]>('http://test.local/questions')
+        const response = await axios.get<ApiQuestion[]>('/questions');
         this.questions = response.data.map(item => ({
-          ...item,
-          content: JSON.parse(item.content)
-        }))
-        console.log('Fetched Questions:', this.questions)
+          id: item.id,
+          id_question_type: item.id_question_type,
+          id_subject: item.id_subject,
+          content: JSON.parse(item.content) as QDataContent
+        }));
+        console.log('Fetched Questions:', this.questions);
       } catch (error) {
-        console.error('Ошибка при загрузке вопросов:', error)
+        console.error('Ошибка при загрузке вопросов:', error);
       }
     },
     async fetchSubjects() {
       try {
-        const response = await axios.get<Subject[]>('http://test.local/subjects')
-        this.subjects = response.data
-        console.log('Fetched Subjects:', this.subjects)
+        const response = await axios.get<Subject[]>('/subjects');
+        this.subjects = response.data;
+        console.log('Fetched Subjects:', this.subjects);
       } catch (error) {
-        console.error('Ошибка при загрузке предметов:', error)
+        console.error('Ошибка при загрузке предметов:', error);
       }
     },
     filterQuestions() {
-      console.log('filterQuestions() called')
+      console.log('filterQuestions() called');
     }
   },
 })
-export default class QuestionListComponent extends Vue {
-  questions!: Question[]
-  selectedQuestionType: string | null = null
-  subjects!: Subject[]
-  selectedSubject: number | null = null
+class QuestionListComponent extends Vue {
+  questions!: Question[];
+  selectedQuestionType: string | null = null;
+  subjects!: Subject[];
+  selectedSubject: number | null = null;
 
-  questionTypes!: string[]
-  filteredQuestions!: Question[]
+  questionTypes!: string[];
+  filteredQuestions!: Question[];
 
   async fetchQuestions() {
     try {
-      const response = await axios.get<any[]>('http://test.local/questions')
+      const response = await axios.get<ApiQuestion[]>('/questions');
       this.questions = response.data.map(item => ({
-        ...item,
-        content: JSON.parse(item.content)
-      }))
-      console.log('Fetched Questions:', this.questions)
+        id: item.id,
+        id_question_type: item.id_question_type,
+        id_subject: item.id_subject,
+        content: JSON.parse(item.content) as QDataContent
+      }));
+      console.log('Fetched Questions:', this.questions);
     } catch (error) {
-      console.error('Ошибка при загрузке вопросов:', error)
+      console.error('Ошибка при загрузке вопросов:', error);
     }
   }
 
   async fetchSubjects() {
     try {
-      const response = await axios.get<Subject[]>('http://test.local/subjects')
-      this.subjects = response.data
-      console.log('Fetched Subjects:', this.subjects)
+      const response = await axios.get<Subject[]>('/subjects');
+      this.subjects = response.data;
+      console.log('Fetched Subjects:', this.subjects);
     } catch (error) {
-      console.error('Ошибка при загрузке предметов:', error)
+      console.error('Ошибка при загрузке предметов:', error);
     }
   }
 
   filterQuestions() {
-    console.log('filterQuestions() called')
+    console.log('filterQuestions() called');
   }
 }
+export default QuestionListComponent;
 </script>
 
 <template>
@@ -155,7 +168,6 @@ export default class QuestionListComponent extends Vue {
       <h2>Вопросы:</h2>
       <ul>
         <li v-for="question in filteredQuestions" :key="question.id">
-          <!-- <RouterLink :to="`/edit/${question.id}`">-->
           <RouterLink :to="`/`">
             {{ question.content?.description }}
           </RouterLink>

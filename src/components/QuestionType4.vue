@@ -4,13 +4,14 @@ import { ElInput } from 'element-plus'
 
 interface QDataContent {
   description: string
-  correctAnswer: string
+  correctAnswer?: string
 }
 
 interface QData {
   id: number
   description: string
-  correctAnswer: string
+  correctAnswer?: string
+  correctAnswers?: (number | string)[]
   content: QDataContent
   id_question_type: number
   userAnswer: string | null | undefined
@@ -34,40 +35,54 @@ interface QData {
     }
   }
 })
-export default class QuestionType4Component extends Vue {
+class QuestionType4Component extends Vue {
   qData!: QData;
   inputWidth = '200px';
   hasUserInteracted = false;
 
   mounted() {
     this.$nextTick(() => {
-      const length = this.qData.content.correctAnswer.length;
+      const correctAnswer = this.getCorrectAnswer();
+      const length = correctAnswer.length;
       this.inputWidth = `${Math.min(300, Math.max(150, length * 8))}px`;
     });
   }
 
+  getCorrectAnswer(): string {
+    // Проверяем разные возможные места хранения правильного ответа
+    if (this.qData.content?.correctAnswer) {
+      return this.qData.content.correctAnswer;
+    }
+    if (this.qData.correctAnswer) {
+      return this.qData.correctAnswer;
+    }
+    if (this.qData.correctAnswers && this.qData.correctAnswers.length > 0) {
+      return String(this.qData.correctAnswers[0]);
+    }
+    return '';
+  }
+
   checkAnswer(newVal: string | null | undefined, oldVal: string | null | undefined) {
-    // Игнорируем первое присваивание (undefined -> null)
     if (oldVal === undefined && newVal === null) return;
 
     this.hasUserInteracted = true;
 
     if (newVal?.trim()) {
-      const isCorrect = newVal.toLowerCase().trim() ===
-                       this.qData.content.correctAnswer.toLowerCase().trim();
+      const correctAnswer = this.getCorrectAnswer();
+      const isCorrect = newVal.toLowerCase().trim() === correctAnswer.toLowerCase().trim();
       this.$emit('answer-submitted', isCorrect);
     } else {
-      // Если ответ очищен, считаем вопрос неотвеченным
       this.$emit('answer-submitted', null);
     }
   }
 }
+export default QuestionType4Component
 </script>
 
 <template>
   <div class="question-container">
     <div class="question-text">
-      {{ qData.content.description.replace('—', '') }}
+      {{ qData.content?.description?.replace('—', '') ?? '' }}
       <span class="input-wrapper">
         <el-input
           v-model="qData.userAnswer"

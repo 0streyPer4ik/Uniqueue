@@ -1,179 +1,206 @@
 <script lang="ts">
-import axios from 'axios';
+import { Options, Vue } from 'vue-class-component'
+import axios from 'axios'
 
-export default {
+interface Subject {
+  id: number
+  name_subject: string
+}
+
+interface Answer {
+  text: string
+  isCorrect: boolean
+}
+
+interface QDataContent {
+  description: string
+  answers: Answer[]
+}
+
+interface Question {
+  id: number
+  id_question_type: number
+  id_subject: number
+  content: QDataContent
+}
+
+interface ApiQuestion {
+  id: number
+  id_question_type: number
+  id_subject: number
+  content: string
+}
+
+@Options({
   data() {
     return {
-      lastName: '',
-      firstName: '',
-      middleName: '',
-      group: '',
-      submissionSuccess: false,
-      submissionError: false,
-      errorMessage: '',
-      id: null,
-    };
+      questions: [] as Question[],
+      selectedQuestionType: null as string | null,
+      subjects: [] as Subject[],
+      selectedSubject: null as number | null,
+    }
   },
-  methods: {
-    async submitForm() {
-      try {
-        const formData = {
-          lastName: this.lastName,
-          firstName: this.firstName,
-          middleName: this.middleName,
-          group: this.group,
-        };
-
-        console.log('Отправка данных:', formData)
-
-        const dataToSend = {
-            name: `${this.lastName} ${this.firstName} ${this.middleName} `,
-            group: this.group,
-        };
-
-        const response = await axios.post('http://test.local/students', dataToSend)
-
-        console.log('Ответ от сервера:', response);
-
-        this.$router.push(`/list`);
-
-        this.submissionSuccess = true
-        this.id = response.data.id
-        this.submissionError = false
-
-        this.lastName = ''
-        this.firstName = ''
-        this.middleName = ''
-        this.group = ''
-
-      } catch (error) {
-        console.error('Ошибка при отправке данных:', error)
-        console.log('Ошибка response:', error.response)
-
-        this.submissionSuccess = false
-        this.submissionError = true
-        this.errorMessage = error.response?.data?.error || error.message || 'Неизвестная ошибка'
+  computed: {
+    questionTypes(): string[] {
+      if (this.questions?.length) {
+        const questionTypes = Array.from(
+          new Set(this.questions.map((q: Question) => q.id_question_type.toString()))
+        ) as string[];
+        console.log('Question Types:', questionTypes);
+        return questionTypes;
       }
+      console.log('Question Types: (No questions loaded yet)');
+      return [];
+    },
+    filteredQuestions(): Question[] {
+      if (!this.questions?.length) {
+        console.log('Filtered Questions: (No questions loaded yet)');
+        return [];
+      }
+
+      let filtered = [...this.questions];
+
+      console.log('Selected Question Type:', this.selectedQuestionType, typeof this.selectedQuestionType);
+      console.log('Selected Subject:', this.selectedSubject, typeof this.selectedSubject);
+
+      if (this.selectedQuestionType) {
+        filtered = filtered.filter(q => {
+          console.log('Question id_question_type:', q.id_question_type, typeof q.id_question_type);
+          return q.id_question_type === Number(this.selectedQuestionType);
+        });
+      }
+
+      if (this.selectedSubject) {
+        filtered = filtered.filter(q => q.id_subject === this.selectedSubject);
+      }
+
+      console.log('Filtered Questions:', filtered);
+      return filtered;
     },
   },
-};
+  mounted() {
+    this.fetchQuestions();
+    this.fetchSubjects();
+  },
+  methods: {
+    async fetchQuestions() {
+      try {
+        const response = await axios.get<ApiQuestion[]>('/questions');
+        this.questions = response.data.map(item => ({
+          id: item.id,
+          id_question_type: item.id_question_type,
+          id_subject: item.id_subject,
+          content: JSON.parse(item.content) as QDataContent
+        }));
+        console.log('Fetched Questions:', this.questions);
+      } catch (error) {
+        console.error('Ошибка при загрузке вопросов:', error);
+      }
+    },
+    async fetchSubjects() {
+      try {
+        const response = await axios.get<Subject[]>('/subjects');
+        this.subjects = response.data;
+        console.log('Fetched Subjects:', this.subjects);
+      } catch (error) {
+        console.error('Ошибка при загрузке предметов:', error);
+      }
+    },
+    filterQuestions() {
+      console.log('filterQuestions() called');
+    }
+  },
+})
+class QuestionListComponent extends Vue {
+  questions!: Question[];
+  selectedQuestionType: string | null = null;
+  subjects!: Subject[];
+  selectedSubject: number | null = null;
+
+  questionTypes!: string[];
+  filteredQuestions!: Question[];
+
+  async fetchQuestions() {
+    try {
+      const response = await axios.get<ApiQuestion[]>('/questions');
+      this.questions = response.data.map(item => ({
+        id: item.id,
+        id_question_type: item.id_question_type,
+        id_subject: item.id_subject,
+        content: JSON.parse(item.content) as QDataContent
+      }));
+      console.log('Fetched Questions:', this.questions);
+    } catch (error) {
+      console.error('Ошибка при загрузке вопросов:', error);
+    }
+  }
+
+  async fetchSubjects() {
+    try {
+      const response = await axios.get<Subject[]>('/subjects');
+      this.subjects = response.data;
+      console.log('Fetched Subjects:', this.subjects);
+    } catch (error) {
+      console.error('Ошибка при загрузке предметов:', error);
+    }
+  }
+
+  filterQuestions() {
+    console.log('filterQuestions() called');
+  }
+}
+export default QuestionListComponent;
 </script>
 
 <template>
-  <div class="container">
-    <h1>Вход в систему тестирования</h1>
-    <form @submit.prevent="submitForm">
-      <div class="form-group">
-        <label for="lastName">Фамилия:</label>
-        <input
-          type="text"
-          id="lastName"
-          v-model="lastName"
-          class="form-control"
-          required
-        />
-      </div>
+  <div class="question-list">
+    <h1>Список вопросов</h1>
 
-      <div class="form-group">
-        <label for="firstName">Имя:</label>
-        <input
-          type="text"
-          id="firstName"
-          v-model="firstName"
-          class="form-control"
-          required
-        />
-      </div>
+    <el-select v-model="selectedSubject" placeholder="Выберите предмет">
+      <el-option v-for="subject in subjects" :key="subject.id" :label="subject.name_subject" :value="subject.id" />
+    </el-select>
 
-      <div class="form-group">
-        <label for="middleName">Отчество:</label>
-        <input
-          type="text"
-          id="middleName"
-          v-model="middleName"
-          class="form-control"
-        />
-      </div>
+    <el-select v-model="selectedQuestionType" placeholder="Выберите тип вопроса" @change="filterQuestions">
+      <el-option v-for="type in questionTypes" :key="type" :label="type" :value="type" />
+    </el-select>
 
-      <div class="form-group">
-        <label for="group">Группа:</label>
-        <input
-          type="text"
-          id="group"
-          v-model="group"
-          class="form-control"
-          required
-        />
-      </div>
-
-      <button type="submit" class="btn btn-primary">Начать тестирование</button>
-    </form>
-
-    <div v-if="submissionSuccess" class="alert alert-success mt-3">
-      Данные успешно отправлены!  ID: {{ id }}
-    </div>
-
-    <div v-if="submissionError" class="alert alert-danger mt-3">
-      Ошибка при отправке данных: {{ errorMessage }}
+    <div v-if="filteredQuestions.length > 0 && selectedQuestionType !== null && selectedSubject !== null">
+      <h2>Вопросы:</h2>
+      <ul>
+        <li v-for="question in filteredQuestions" :key="question.id">
+          <RouterLink :to="`/`">
+            {{ question.content?.description }}
+          </RouterLink>
+        </li>
+      </ul>
     </div>
   </div>
 </template>
 
 <style scoped>
-.container {
-  max-width: 600px;
-  margin: 0 auto;
+.question-list {
+  font-family: Arial, sans-serif;
   padding: 20px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
 }
 
-.form-group {
-  margin-bottom: 15px;
+h1 {
+  text-align: center;
+  margin-bottom: 20px;
 }
 
-label {
-  display: block;
-  margin-bottom: 5px;
-  font-weight: bold;
+.el-select {
+  width: 200px;
+  margin-right: 20px;
 }
 
-.form-control {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  box-sizing: border-box;
+ul {
+  list-style: none;
+  padding: 0;
 }
 
-.btn-primary {
-  background-color: #007bff;
-  color: white;
-  padding: 10px 15px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.btn-primary:hover {
-  background-color: #0056b3;
-}
-
-.alert {
-  padding: 10px;
-  margin-bottom: 15px;
-  border-radius: 4px;
-}
-
-.alert-success {
-  background-color: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
-}
-
-.alert-danger {
-  background-color: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
+li {
+  margin-bottom: 10px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
 }
 </style>

@@ -1,7 +1,7 @@
 <script lang="ts">
 import { Options, Vue } from "vue-class-component"
-import axios, { AxiosResponse } from 'axios'
-import type { Question } from "@/interfaCES/QuestionInterface"
+import axios from 'axios'
+import type { AxiosResponse } from 'axios'
 import { ElMessage } from 'element-plus'
 import { ArrowUp, ArrowDown } from "@element-plus/icons-vue"
 
@@ -11,7 +11,7 @@ interface QDataContent {
   qDescription?: string[]
   answersType2?: AnswerType2[]
   answersType3?: AnswerType3[]
-  correctAnswer?: string[]
+  correctAnswer?: string[] | string
   correctAnswerType4?: string
 }
 
@@ -33,15 +33,15 @@ interface AnswerType3 {
 interface Question {
   id: number
   id_question_type: number
-  content: QDataContent
+  content: QDataContent | string
   id_subject: number
 }
 
 @Options({
-  components: { ElMessage, ArrowUp, ArrowDown }
+  components: { ArrowUp, ArrowDown }
 })
 
-export default class QuestionType1Component extends Vue {
+class QuestionType1Component extends Vue {
   id: number = 0;
   question: Question = {
     "id": 0,
@@ -58,152 +58,137 @@ export default class QuestionType1Component extends Vue {
       "qDescription": [],
       "answersType2": [],
       "answersType3": [],
-      "correctAnswer": ""
+      "correctAnswer": []
     },
     "id_subject": 0
   };
 
   mounted() {
-  if (this.$route.params.id && parseInt(this.$route.params.id) > 0) {
-    this.id = parseInt(this.$route.params.id)
+    const idParam = this.$route.params.id;
+    if (idParam && !Array.isArray(idParam) && parseInt(idParam) > 0) {
+      this.id = parseInt(idParam);
 
-    axios.get<Question>('http://test.local/questions/' + this.id)
-      .then((response: AxiosResponse<Question>) => {
-        this.question = response.data;
-        this.transformQuestionContent()
-      })
-      .catch(error => {
-        console.error('Ошибка при получении вопроса:', error)
-      });
+      axios.get<Question>('/questions/' + this.id)
+        .then((response: AxiosResponse<Question>) => {
+          this.question = response.data;
+          this.transformQuestionContent()
+        })
+        .catch(error => {
+          console.error('Ошибка при получении вопроса:', error)
+        });
+    }
   }
-}
 
-transformQuestionContent() {
+  transformQuestionContent() {
+    if (typeof this.question.content === 'string') {
+      try {
+        const parsedContent = JSON.parse(this.question.content);
+        // Ensure all required fields are present
+        this.question.content = {
+          description: parsedContent.description || "",
+          answers: parsedContent.answers || [],
+          qDescription: parsedContent.qDescription || [],
+          answersType2: parsedContent.answersType2 || [],
+          answersType3: parsedContent.answersType3 || [],
+          correctAnswer: parsedContent.correctAnswer || (this.question.id_question_type === 4 ? "" : [])
+        };
+      } catch (e) {
+        console.error("Ошибка парсинга content", e);
+        this.question.content = {
+          description: "",
+          answers: [],
+          qDescription: [],
+          answersType2: [],
+          answersType3: [],
+          correctAnswer: this.question.id_question_type === 4 ? "" : []
+        };
+      }
+    }
+
+    // Ensure proper typing based on question type
     if (this.question.id_question_type === 1) {
-        if (typeof this.question.content === 'string') {
-            try {
-                this.question.content = JSON.parse(this.question.content);
-            } catch (e) {
-                console.error("Ошибка парсинга content", e)
-                this.question.content = { description: "", answers: [] };
-            }
-        }
-        if (!Array.isArray(this.question.content.answers)) {
-            this.question.content.answers = [
-                { text: "", isCorrect: false },
-                { text: "", isCorrect: false },
-                { text: "", isCorrect: false },
-                { text: "", isCorrect: false },
-                { text: "", isCorrect: false }
-            ];
-        }
+      if (!Array.isArray(this.question.content.answers)) {
+        this.question.content.answers = [
+          { text: "", isCorrect: false },
+          { text: "", isCorrect: false },
+          { text: "", isCorrect: false },
+          { text: "", isCorrect: false },
+          { text: "", isCorrect: false }
+        ];
+      }
     } else if (this.question.id_question_type === 2) {
-        if (typeof this.question.content === 'string') {
-            try {
-                this.question.content = JSON.parse(this.question.content)
-            } catch (e) {
-                console.error("Ошибка парсинга content", e)
-                this.question.content = { description: "", qDescription: [], answersType2: [] }
-            }
-        }
-
-
-        if (!this.question.content.qDescription) {
-            this.question.content.qDescription = []
-        }
-        if (!this.question.content.answersType2) {
-            this.question.content.answersType2 = []
-        }
+      if (!this.question.content.qDescription) {
+        this.question.content.qDescription = [];
+      }
+      if (!this.question.content.answersType2) {
+        this.question.content.answersType2 = [];
+      }
     } else if (this.question.id_question_type === 3) {
-        if (typeof this.question.content === 'string') {
-            try {
-                this.question.content = JSON.parse(this.question.content)
-            } catch (e) {
-                console.error("Ошибка парсинга content", e);
-                this.question.content = { description: "", answersType3: [] }
-            }
-        }
-        if (!this.question.content.answersType3) {
-            this.question.content.answersType3 = [];
-        }
+      if (!this.question.content.answersType3) {
+        this.question.content.answersType3 = [];
+      }
     } else if (this.question.id_question_type === 4) {
-        if (typeof this.question.content === 'string') {
-            try {
-                this.question.content = JSON.parse(this.question.content)
-            } catch (e) {
-                console.error("Ошибка парсинга content", e);
-                this.question.content = { description: "", correctAnswer: "" }
-            }
-        }
-        if (!this.question.content.correctAnswer) {
-            this.question.content.correctAnswer = ""
-        }
+      if (typeof this.question.content.correctAnswer !== 'string') {
+        this.question.content.correctAnswer = "";
+      }
     } else if (this.question.id_question_type === 5) {
-        if (typeof this.question.content === 'string') {
-          try {
-            this.question.content = JSON.parse(this.question.content)
-          } catch (e) {
-            console.error("Ошибка парсинга content", e);
-            this.question.content = { description: "", correctAnswer: [] }
-          }
-        }
-        if (!this.question.content.correctAnswer) {
-          this.question.content.correctAnswer = []
-        }
-  }
-}
-
-  // Методы для первого типа вопроса
-  addAnswer() {
-    if (this.question && this.question.content) {
-      this.question.content.answers.push({ text: "", isCorrect: false })
-    }
-  }
-
-  removeAnswer(index: number) {
-    if (this.question && this.question.content) {
-      this.question.content.answers.splice(index, 1)
-    }
-  }
-
-  resetCorrectAnswers() {
-    if (this.question && this.question.content) {
-      this.question.content.answers.forEach(answer => {
-        answer.isCorrect = false
-      });
-    }
-  }
-
-  // Методы для второго типа вопроса
-  addQuestion() {
-    if (!this.question.content.qDescription) {
-      this.question.content.qDescription = []
-    }
-    this.question.content.qDescription.push("")
-  }
-
-  removeQuestion(index: number) {
-    if (this.question.content.qDescription) {
-      this.question.content.qDescription.splice(index, 1)
-
-      if (this.question.content.answersType2) {
-          this.question.content.answersType2.forEach(answer => {
-              if (answer.matches === this.question.content.qDescription[index]) {
-                  answer.matches = ""
-              }
-          })
+      if (!Array.isArray(this.question.content.correctAnswer)) {
+        this.question.content.correctAnswer = [];
       }
     }
   }
 
-removeAnswerType2(index: number) {
-    if (this.question.content.answersType2) {
+  // Methods for type 1 questions
+  addAnswer() {
+    if (this.question && typeof this.question.content !== 'string') {
+      this.question.content.answers.push({ text: "", isCorrect: false });
+    }
+  }
+
+  removeAnswer(index: number) {
+    if (this.question && typeof this.question.content !== 'string') {
+      this.question.content.answers.splice(index, 1);
+    }
+  }
+
+  resetCorrectAnswers() {
+    if (this.question && typeof this.question.content !== 'string') {
+      this.question.content.answers.forEach(answer => {
+        answer.isCorrect = false;
+      });
+    }
+  }
+
+  // Methods for type 2 questions
+  addQuestion() {
+    if (this.question && typeof this.question.content !== 'string' && this.question.content.qDescription) {
+      this.question.content.qDescription.push("");
+    }
+  }
+
+  removeQuestion(index: number) {
+    if (this.question && typeof this.question.content !== 'string' && this.question.content.qDescription) {
+      const removedQuestion = this.question.content.qDescription[index];
+      this.question.content.qDescription.splice(index, 1);
+
+      if (this.question.content.answersType2) {
+        this.question.content.answersType2.forEach(answer => {
+          if (answer.matches === removedQuestion) {
+            answer.matches = "";
+          }
+        });
+      }
+    }
+  }
+
+  removeAnswerType2(index: number) {
+    if (this.question && typeof this.question.content !== 'string' && this.question.content.answersType2) {
       this.question.content.answersType2.splice(index, 1);
     }
   }
 
   moveItem(index: number, direction: number) {
-    if (this.question.content.answersType2) {
+    if (this.question && typeof this.question.content !== 'string' && this.question.content.answersType2) {
       const newIndex = index + direction;
 
       if (newIndex >= 0 && newIndex < this.question.content.answersType2.length) {
@@ -217,82 +202,95 @@ removeAnswerType2(index: number) {
     }
   }
 
-    addAnswerType2() {
-        if (!this.question.content.answersType2) {
-            this.question.content.answersType2 = [];
-        }
-        this.question.content.answersType2.push({ text: "", matches: "" });
+  addAnswerType2() {
+    if (this.question && typeof this.question.content !== 'string') {
+      if (!this.question.content.answersType2) {
+        this.question.content.answersType2 = [];
+      }
+      this.question.content.answersType2.push({ text: "", matches: "" });
     }
+  }
 
-    addAnswerType3() {
-        if (!this.question.content.answersType3) {
-            this.question.content.answersType3 = [];
-        }
-        this.question.content.answersType3.push({ text: "", correctPosition: 0 });
+  addAnswerType3() {
+    if (this.question && typeof this.question.content !== 'string') {
+      if (!this.question.content.answersType3) {
+        this.question.content.answersType3 = [];
+      }
+      this.question.content.answersType3.push({ text: "", correctPosition: 0 });
     }
+  }
 
-    addCorrectAnswer() {
-      if (!this.question.content.correctAnswer) {
+  addCorrectAnswer() {
+    if (this.question && typeof this.question.content !== 'string') {
+      if (!Array.isArray(this.question.content.correctAnswer)) {
         this.question.content.correctAnswer = [];
       }
-      this.question.content.correctAnswer.push("");
-}
-
-removeCorrectAnswer(index: number) {
-  if (this.question.content.correctAnswer) {
-    this.question.content.correctAnswer.splice(index, 1);
+      (this.question.content.correctAnswer as string[]).push("");
+    }
   }
-}
 
-removeAnswerType3(index: number) {
-    if (this.question.content.answersType3) {
+  removeCorrectAnswer(index: number) {
+    if (this.question && typeof this.question.content !== 'string' && Array.isArray(this.question.content.correctAnswer)) {
+      this.question.content.correctAnswer.splice(index, 1);
+    }
+  }
+
+  removeAnswerType3(index: number) {
+    if (this.question && typeof this.question.content !== 'string' && this.question.content.answersType3) {
       this.question.content.answersType3.splice(index, 1);
     }
   }
 
   saveQuestion() {
-    if (this.question && this.question.content) {
+    if (this.question) {
       let contentToSave;
 
-      if (this.question.id_question_type === 1) {
-        const answersToSave = this.question.content.answers.map(answer => ({
-          text: answer.text,
-          isCorrect: answer.isCorrect,
-        }));
-
-        contentToSave = {
-          ...this.question.content,
-          answers: answersToSave,
-        };
-      } else if (this.question.id_question_type === 2) {
+      if (typeof this.question.content === 'string') {
+        try {
+          contentToSave = JSON.parse(this.question.content);
+        } catch (e) {
+          console.error("Error parsing content", e);
+          return;
+        }
+      } else {
+        if (this.question.id_question_type === 1) {
+          contentToSave = {
+            description: this.question.content.description,
+            answers: this.question.content.answers.map(answer => ({
+              text: answer.text,
+              isCorrect: answer.isCorrect,
+            })),
+          };
+        } else if (this.question.id_question_type === 2) {
           contentToSave = {
             description: this.question.content.description,
             qDescription: this.question.content.qDescription,
             answersType2: this.question.content.answersType2
           };
-      } else if (this.question.id_question_type === 3) {
+        } else if (this.question.id_question_type === 3) {
           contentToSave = {
             description: this.question.content.description,
             answersType3: this.question.content.answersType3,
           };
-      } else if (this.question.id_question_type === 4) {
+        } else if (this.question.id_question_type === 4) {
           contentToSave = {
             description: this.question.content.description,
             correctAnswer: this.question.content.correctAnswer,
           };
-      } else if (this.question.id_question_type === 5) {
-        contentToSave = {
-          description: this.question.content.description,
-          correctAnswer: this.question.content.correctAnswer,
-        };
-    }
+        } else if (this.question.id_question_type === 5) {
+          contentToSave = {
+            description: this.question.content.description,
+            correctAnswer: this.question.content.correctAnswer,
+          };
+        }
+      }
 
       const updatedQuestion = {
         ...this.question,
         content: JSON.stringify(contentToSave),
       };
 
-      axios.put('http://test.local/questions/' + this.id, updatedQuestion)
+      axios.put('/questions/' + this.id, updatedQuestion)
         .then(response => {
           console.log('Вопросы сохранены', response);
           ElMessage({
@@ -301,15 +299,16 @@ removeAnswerType3(index: number) {
           });
         })
         .catch(error => {
-          console.error('Ошибка!', error)
+          console.error('Ошибка!', error);
           ElMessage({
             message: 'Ошибка при сохранении!',
             type: 'error',
-          })
-        })
+          });
+        });
     }
   }
 }
+export default QuestionType1Component;
 </script>
 
 <template>
@@ -317,8 +316,7 @@ removeAnswerType3(index: number) {
     <h2>Редактировать вопрос</h2>
     <br>
 
-    <div v-if="question.id_question_type === 1">
-      <!-- Интерфейс редактирования для 1 типа вопроса -->
+    <div v-if="question.id_question_type === 1 && typeof question.content !== 'string'">
       <el-input
         v-model="question.content.description"
         type="textarea"
@@ -342,16 +340,20 @@ removeAnswerType3(index: number) {
       <el-button type="primary" @click="saveQuestion">Сохранить</el-button>
     </div>
 
-    <div v-else-if="question.id_question_type === 2">
-      <!-- Интерфейс редактирования для 2 типа вопроса -->
+    <div v-else-if="question.id_question_type === 2 && typeof question.content !== 'string'">
       <el-input
         v-model="question.content.description"
         placeholder="Описание вопроса"
         style="width: 100%; margin-bottom: 15px;"
       />
 
+       <div v-if="typeof question.content !== 'string' && question.content.qDescription">
       <h4>Вопросы:</h4>
-      <div v-for="(qDescription, index) in question.content.qDescription" :key="'q' + index" style="margin-bottom: 10px;">
+      <div
+        v-for="(qDescription, index) in question.content.qDescription"
+        :key="'q' + index"
+        style="margin-bottom: 10px;"
+      >
         <el-input
           v-model="question.content.qDescription[index]"
           placeholder="Вопрос"
@@ -362,7 +364,15 @@ removeAnswerType3(index: number) {
           </template>
         </el-input>
       </div>
-      <el-button @click="addQuestion" type="" style="margin-bottom: 15px;">Добавить вопрос</el-button>
+      <el-button
+        @click="addQuestion"
+        type=""
+        style="margin-bottom: 15px;"
+        :disabled="typeof question.content === 'string'"
+      >
+        Добавить вопрос
+      </el-button>
+    </div>
 
       <h4>Ответы:</h4>
       <div v-for="(answer, index) in question.content.answersType2" :key="'a' + index" style="margin-bottom: 15px;">
@@ -384,8 +394,8 @@ removeAnswerType3(index: number) {
       <el-button @click="addAnswerType2" type="">Добавить ответ</el-button>
       <el-button type="primary" @click="saveQuestion">Сохранить</el-button>
     </div>
-    <div v-else-if="question.id_question_type === 3" class="question-type-3-editor">
-      <!-- Интерфейс редактирования для 3 типа вопроса -->
+
+    <div v-else-if="question.id_question_type === 3 && typeof question.content !== 'string'" class="question-type-3-editor">
       <el-input
         type="textarea"
         v-model="question.content.description"
@@ -403,7 +413,7 @@ removeAnswerType3(index: number) {
             placeholder="Правильная позиция"
             class="answer-position-input"
             min="0"
-            :max="question.content.answersType3.length - 1"
+            :max="question.content.answersType3 ? question.content.answersType3.length - 1 : 0"
           />
           <el-button @click="removeAnswerType3(index)" type="danger" size="small">Удалить</el-button>
         </div>
@@ -411,8 +421,8 @@ removeAnswerType3(index: number) {
       <el-button @click="addAnswerType3" class="add-answer-button">Добавить ответ</el-button>
       <el-button type="primary" @click="saveQuestion">Сохранить</el-button>
     </div>
-    <div v-else-if="question.id_question_type === 4" class="question-type-4-editor">
-      <!-- Интерфейс редактирования для 4 типа вопроса -->
+
+    <div v-else-if="question.id_question_type === 4 && typeof question.content !== 'string'" class="question-type-4-editor">
       <el-input
         v-model="question.content.description"
         type="textarea"
@@ -429,8 +439,7 @@ removeAnswerType3(index: number) {
       <el-button type="primary" @click="saveQuestion">Сохранить</el-button>
     </div>
 
-      <div v-else-if="question.id_question_type === 5" class="question-type-5-editor">
-      <!-- Интерфейс редактирования для 5 типа вопроса -->
+    <div v-else-if="question.id_question_type === 5 && typeof question.content !== 'string'" class="question-type-5-editor">
       <el-input
         v-model="question.content.description"
         type="textarea"
@@ -439,16 +448,24 @@ removeAnswerType3(index: number) {
       />
 
       <h4>Правильные ответы:</h4>
-      <div v-for="(answer, index) in question.content.correctAnswer" :key="'ca' + index" class="correct-answer-item">
-        <el-input
-          v-model="question.content.correctAnswer[index]"
-          placeholder="Правильный ответ"
-          class="correct-answer-input"
+      <div v-if="Array.isArray(question.content.correctAnswer) && question.content.correctAnswer.length">
+        <div
+          v-for="(answer, index) in question.content.correctAnswer"
+          :key="'ca' + index"
+          class="correct-answer-item"
         >
-          <template #append>
-            <el-button @click="removeCorrectAnswer(index)" type="danger" size="small">Удалить</el-button>
-          </template>
-        </el-input>
+          <el-input
+            v-model="question.content.correctAnswer[index]"
+            placeholder="Правильный ответ"
+            class="correct-answer-input"
+          >
+            <template #append>
+              <el-button @click="removeCorrectAnswer(index)" type="danger" size="small">
+                Удалить
+              </el-button>
+            </template>
+          </el-input>
+        </div>
       </div>
 
       <el-button @click="addCorrectAnswer" class="add-correct-answer-button">Добавить ответ</el-button>
@@ -512,10 +529,6 @@ removeAnswerType3(index: number) {
 .answer-position-input {
   width: 150px;
   margin-right: 10px;
-}
-
-.question-type-4-editor {
-  /* Add CSS classes for consistent styling */
 }
 
 .question-description-input {
