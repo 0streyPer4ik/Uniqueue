@@ -1,6 +1,6 @@
   <script lang="ts">
   import { Options, Vue } from "vue-class-component"
-  import { questionStore } from "../stores/counter"
+  import { questionStore, SubjectsStore } from "../stores/counter"
   import QuestionComponent from "../components/Question.vue"
 
 
@@ -11,15 +11,14 @@
   })
   class HomeComponent extends Vue {
     qListStore = questionStore()
+    subjectsStore = SubjectsStore()
     answers: Record<number, boolean | null> = {}
     showResults = false
     id_subject = 0
+    id_level = 0
 
     get subjectList() {
-      return {
-        '1': "Программирование",
-        '3': "Нейросети",
-      }
+      return this.subjectsStore.getSubjects.filter(el => el.education_level == this.id_level)
     }
 
     get qList() {
@@ -30,6 +29,10 @@
       this.answers[payload.questionIndex] = payload.isCorrect
     }
 
+    handleSetEducationLevel(data: number) {
+      this.id_level = data
+    }
+    
     handleSetSubject(data: string) {
       this.id_subject = parseInt(data)
     }
@@ -74,14 +77,24 @@
   </script>
 
   <template>
-    <div class="container" v-if="id_subject == 0">
+    <div id="educationTypeSelect" v-if="id_level == 0">
+      <div @click="handleSetEducationLevel(1)">
+        <img src="/img/mb.png" /><br />
+        Бакалавриат
+      </div>
+      <div @click="handleSetEducationLevel(2)">
+        <img src="/img/mm.png" /><br />
+        Магистратура
+      </div>
+    </div>
+    <div class="container" v-else-if="id_subject == 0">
       Начать тестирование по
       <el-button
-        v-for="(text, key) in subjectList"
-        :key="key"
-        @click="handleSetSubject(key)"
+        v-for="obj in subjectList"
+        :key="obj.id"
+        @click="handleSetSubject(obj.id)"
       >
-        {{ text }}
+        {{ obj.name_short }}
       </el-button>
     </div>
     <div class="container" v-if="id_subject > 0">
@@ -131,7 +144,21 @@
     </div>
   </template>
 
-  <style scoped>
+<style scoped>
+  #educationTypeSelect {
+    display: flex;
+    div {
+      width: 400px;
+      margin: 0px auto;
+      text-align: center;
+      cursor: pointer;
+      img {
+        max-height: 250px;
+        border: 2px solid #2b2b2b;
+        border-radius: 10%;
+      }
+    }
+  }
   .container {
     display: flex;
     gap: 20px;

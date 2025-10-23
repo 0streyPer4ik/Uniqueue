@@ -1,5 +1,6 @@
 import { ref, computed, defineComponent } from 'vue'
 import { defineStore, mapStores, mapState, mapActions } from 'pinia'
+import type { SubjectInterface } from '@/interfaces/QuestionInterface'
 
 export const useCounterStore = defineStore('counter', () => {
   const count = ref(0)
@@ -48,6 +49,22 @@ export const questionStore = defineStore('question', {
     addQuestion(question: ListItemInterface) {
       this.list.push(question)
     }
+  }
+})
+
+export const SubjectsStore = defineStore('subjects', {
+  state: () => ({
+    list: [] as SubjectInterface[],
+  }),
+  getters: {
+    getSubjects(state): SubjectInterface[] {
+      return state.list
+    }
+  },
+  actions: {
+    async setSubjects(list: SubjectInterface[]) {
+      this.list = list
+    },
   }
 })
 

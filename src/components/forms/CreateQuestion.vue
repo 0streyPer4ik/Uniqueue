@@ -282,9 +282,9 @@ parseText() {
                 break
             }
             if (line !== '') {
-                const parts = line.split(')')
-                if (parts.length === 2) {
-                    answers.push({ text: parts[1].trim(), isCorrect: false })
+                const parts = line.match(/^(.*?)\)(.*)$/);
+                if (parts) {
+                    answers.push({ text: parts[2].trim(), isCorrect: false })
                 }
             }
         }
@@ -297,8 +297,11 @@ parseText() {
 
             this.question.content.answers.forEach((answer) => {
               const answerLine = lines.find(line => line.startsWith(correctAnswerLetter + ')'))
-              if (answerLine && answerLine.split(')')[1].trim() === answer.text) {
+              if (answerLine) {
+                const parts = answerLine.match(/^(.*?)\)(.*)$/)
+                if (parts && parts[2].trim() === answer.text) {
                   answer.isCorrect = true
+                }
               }
             })
         }
@@ -356,7 +359,7 @@ parseText() {
     }
 
     const pairCount = this.matchingData.qDescription.length
-    if (pairCount !== terms.length || (pairCount !== 3 && pairCount !== 4)) {
+    if (pairCount !== terms.length || pairCount < 3 || pairCount > 5) {
         ElMessage({
             message: 'Некорректное количество пар! Должно быть 3 или 4 формулировки и столько же терминов.',
             type: 'error',
@@ -441,19 +444,19 @@ parseText() {
 
         for (let i = 1; i < lines.length; i++) {
             const line = lines[i].trim();
-            if (line === "Правильный ответ:") {
+            if (line.startsWith("Правильный ответ:")) {
                 break;
             }
             if (line !== "") {
-                const parts = line.split(')')
-                if (parts.length === 2) {
-                  termToLetters.push({text: parts[1].trim(), letter: parts[0].trim()})
-                  this.sequenceData.answersType3.push({ text: parts[1].trim(), correctPosition: 1 })
+                const parts = line.match(/^(.*?)\)(.*)$/);
+                if (parts) {
+                    termToLetters.push({text: parts[2].trim(), letter: parts[1].trim()})
+                    this.sequenceData.answersType3.push({ text: parts[2].trim(), correctPosition: 1 })
                 }
             }
         }
 
-        const correctAnswerLine = lines.find(line => line === "Правильный ответ:")
+        const correctAnswerLine = lines.find(line => line.startsWith("Правильный ответ:"))
 
         if (!correctAnswerLine) {
             ElMessage({
@@ -463,25 +466,8 @@ parseText() {
             return
         }
 
-        const correctAnswerIndex = lines.indexOf(correctAnswerLine);
-        if (correctAnswerIndex === -1) {
-            ElMessage({
-                message: 'Не найдена строка "Правильный ответ:"!',
-                type: 'error',
-            });
-            return
-        }
-
-        const correctAnswerString = lines[correctAnswerIndex + 1];
-        if (!correctAnswerString) {
-            ElMessage({
-                message: 'Отсутствует строка с ответами!',
-                type: 'error',
-            });
-            return
-        }
-        const correctAnswers = correctAnswerString.split(',').map(s => s.trim())
-
+        const correctAnswers = correctAnswerLine.split(':')[1].split(',').map(s => s.trim())
+        console.log(correctAnswers)
         if (correctAnswers.length !== this.sequenceData.answersType3.length) {
             ElMessage({
                 message: 'Количество правильных ответов не совпадает с количеством вариантов!',
@@ -503,7 +489,7 @@ parseText() {
             }
         }
       } else if (this.question.id_question_type === 4) {
-          this.question.content.description = lines[0]?.split('_')[0]?.trim() || ""
+          this.question.content.description = lines[0].replace(/_+/, '_____')
           this.question.content.correctAnswer = lines[1]?.split(':')[1]?.trim() || ""
       } else if (this.question.id_question_type === 5) {
 
@@ -576,8 +562,9 @@ export default QuestionParserComponent
         <el-input
             v-model="inputText"
             type="textarea"
+            :autosize="{ minRows: 10, maxRows: 20 }"
             placeholder="Вставьте вопрос и ответы"
-            style="width: 800px; height: 150px;"
+            style="width: 800px;"
         />
         <el-button type="primary" @click="parseText" class="text_copy">Разобрать</el-button>
 

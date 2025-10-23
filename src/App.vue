@@ -1,13 +1,27 @@
 <script setup lang="ts">
 import { RouterView } from "vue-router"
-import { questionStore } from "./stores/counter"
+import { questionStore, SubjectsStore } from "./stores/counter"
 import { onMounted } from "vue"
 import axios from 'axios'
 import type { AxiosResponse } from 'axios'
-import type { Question } from "@/interfaces/QuestionInterface"
+import type { Question, SubjectInterface } from "@/interfaces/QuestionInterface"
 
 onMounted(() => {
   const qListStore = questionStore();
+  const subjectStore = SubjectsStore();
+
+
+  const urlSubjects = '/subjects?pagination=false&filter[enabled]=1'
+  axios.get<SubjectInterface[]>(urlSubjects)
+    .then((response: AxiosResponse<SubjectInterface[]>) => {
+      if (!response.data) {
+        console.error('Response data is empty or undefined');
+        return;
+      }
+      const subjects = [...response.data]
+      subjectStore.setSubjects(subjects)
+    })
+
   axios.get<Question[]>('/questions?pagination=false')
     .then((response: AxiosResponse<Question[]>) => {
       if (!response.data) {
