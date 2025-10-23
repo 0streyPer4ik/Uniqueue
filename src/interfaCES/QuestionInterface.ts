@@ -36,3 +36,11 @@ export interface Question {
   id_subject: number;
   additionalText?: string;
 }
+
+export interface SubjectInterface {
+  id: number
+  name_subject: string
+  name_short: string
+  enabled: number
+  education_level: number
+}
