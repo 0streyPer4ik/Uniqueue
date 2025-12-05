@@ -84,31 +84,87 @@ export default QuestionType1Component
 </template>
 
 <style scoped>
-  @media (min-width: 360px) and (max-width: 720px) {
-    .question-text {
-      font-size: 0.8em;
-      margin-bottom: 20px;
-    }
+.question-container {
+  max-width: 800px;
+  width: 100%;
+  margin: 0 0 30px 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
-    .answers-group {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      margin-left: 10px;
-    }
+.description {
+  margin-bottom: 25px;
+}
 
-    .answer-text {
-      font-size: 0.7em;
-      padding: 0;
-    }
-    .answer-option :deep(.el-radio-button__inner) {
-    padding: 8px 10px;
-    display: flex;
-    right: 9px;
-  }
+.question-text {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  word-break: break-word;
+  font-family: inherit;
+  font-size: 1.1em;
+  line-height: 1.5;
+  margin: 0;
+}
 
+.answers-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.answer-option {
+  width: 100%;
+}
+
+.answer-option :deep(.el-radio-button__inner) {
+  width: 100%;
+  padding: 12px 16px;
+  text-align: left;
+  white-space: normal;
+  word-wrap: break-word;
+  word-break: break-word;
+  line-height: 1.4;
+}
+
+.answer-text {
+  display: inline-block;
+  width: 100%;
+  word-wrap: break-word;
+  word-break: break-word;
+}
+
+@media (min-width: 360px) and (max-width: 720px) {
   .question-container {
-    margin-bottom: 30px;
+    max-width: 100%;
+    padding: 0;
+    margin-bottom: 25px;
   }
+
+  .question-text {
+    font-size: 0.95em;
+    padding: 12px;
+    margin-bottom: 20px;
   }
+
+  .answers-group {
+    margin-left: 0;
+    gap: 8px;
+  }
+
+  .answer-text {
+    font-size: 0.9em;
+  }
+
+  .answer-option :deep(.el-radio-button__inner) {
+    padding: 10px 12px;
+    font-size: 0.9em;
+  }
+}
+
+@media (min-width: 721px) and (max-width: 1024px) {
+  .question-container {
+    max-width: 100%;
+  }
+}
 </style>

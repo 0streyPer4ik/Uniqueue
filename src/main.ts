@@ -16,7 +16,7 @@ import locale from "element-plus/es/locale/lang/ru"
 import "dayjs/locale/ru"
 import * as ElementPlusIconsVue from "@element-plus/icons-vue"
 
-axios.defaults.baseURL = 'https://akit-testing.ocooler.com/api/'
+axios.defaults.baseURL = 'https://akit-testing.ocooler.ru/api/'
 const app = createApp(App)
 
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
