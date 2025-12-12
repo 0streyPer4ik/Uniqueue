@@ -52,63 +52,48 @@ class QuestionType1Component extends Vue {
 
   get hasMultipleCorrectAnswers(): boolean {
     if (!this.qData.content?.answers) return false
-
     const correctCount = this.qData.content.answers.filter(answer => answer.isCorrect).length
     return correctCount > 1
   }
 
-  handleAnswerChange(index: number) {
-    if (this.hasMultipleCorrectAnswers) {
-      const answerIndex = this.selectedAnswers.indexOf(index)
-      if (answerIndex === -1) {
-        this.selectedAnswers.push(index)
-      } else {
-        this.selectedAnswers.splice(answerIndex, 1)
-      }
+  toggleAnswer(index: number) {
+    const answerIndex = this.selectedAnswers.indexOf(index)
+    if (answerIndex === -1) {
+      this.selectedAnswers.push(index)
     } else {
-      this.selectedAnswers = [index]
+      this.selectedAnswers.splice(answerIndex, 1)
     }
 
     this.submitAnswer()
   }
 
   submitAnswer() {
-    if (this.selectedAnswers.length === 0 || !this.qData.content?.answers) return
+    if (!this.qData.content?.answers) return
 
-    if (this.hasMultipleCorrectAnswers) {
-      const correctIndices = this.shuffledAnswers
-        .map((answer, idx) => ({ answer, idx }))
-        .filter(item => item.answer.isCorrect)
-        .map(item => item.idx)
+    const correctIndices = this.shuffledAnswers
+      .map((answer, idx) => ({ answer, idx }))
+      .filter(item => item.answer.isCorrect)
+      .map(item => item.idx)
 
-      const incorrectIndices = this.shuffledAnswers
-        .map((answer, idx) => ({ answer, idx }))
-        .filter(item => !item.answer.isCorrect)
-        .map(item => item.idx)
+    const incorrectIndices = this.shuffledAnswers
+      .map((answer, idx) => ({ answer, idx }))
+      .filter(item => !item.answer.isCorrect)
+      .map(item => item.idx)
 
-      const allCorrectSelected = correctIndices.every(idx =>
-        this.selectedAnswers.includes(idx)
-      )
+    const allCorrectSelected = correctIndices.every(idx =>
+      this.selectedAnswers.includes(idx)
+    )
 
-      const noIncorrectSelected = incorrectIndices.every(idx =>
-        !this.selectedAnswers.includes(idx)
-      )
+    const noIncorrectSelected = incorrectIndices.every(idx =>
+      !this.selectedAnswers.includes(idx)
+    )
 
-      const isCorrect = allCorrectSelected && noIncorrectSelected
-      this.$emit('answer-submitted', isCorrect)
-    } else {
-
-      const isCorrect = this.shuffledAnswers[this.selectedAnswers[0]]?.isCorrect ?? false
-      this.$emit('answer-submitted', isCorrect)
-    }
+    const isCorrect = allCorrectSelected && noIncorrectSelected
+    this.$emit('answer-submitted', isCorrect)
   }
 
   isAnswerSelected(index: number): boolean {
     return this.selectedAnswers.includes(index)
-  }
-
-  toggleAnswer(index: number) {
-    this.handleAnswerChange(index)
   }
 }
 export default QuestionType1Component
@@ -120,32 +105,15 @@ export default QuestionType1Component
       <pre class="question-text">{{ qData.content.description?.trim() || '' }}</pre>
     </div>
 
-    <el-radio-group
-      v-if="!hasMultipleCorrectAnswers"
-      :model-value="selectedAnswers[0]"
-      class="answers-group"
-      size="large"
-      @change="handleAnswerChange"
-    >
-      <el-radio-button
-        v-for="(answer, index) in shuffledAnswers"
-        :key="index"
-        :label="index"
-        class="answer-option"
-      >
-        <span class="answer-text">{{ answer.text }}</span>
-      </el-radio-button>
-    </el-radio-group>
-
-    <div v-else class="answers-group multiple-group">
+    <div class="answers-group">
       <div
         v-for="(answer, index) in shuffledAnswers"
         :key="index"
-        class="answer-option multiple"
+        class="answer-option"
         :class="{ 'selected': isAnswerSelected(index) }"
         @click="toggleAnswer(index)"
       >
-        <div class="multiple-selector">
+        <div class="selector">
           <div class="checkbox" :class="{ 'checked': isAnswerSelected(index) }">
             <span v-if="isAnswerSelected(index)" class="checkmark">✓</span>
           </div>
@@ -188,40 +156,6 @@ export default QuestionType1Component
 
 .answer-option {
   width: 100%;
-}
-
-.answer-option :deep(.el-radio-button__inner) {
-  width: 100%;
-  padding: 12px 16px;
-  text-align: left;
-  white-space: normal;
-  word-wrap: break-word;
-  word-break: break-word;
-  line-height: 1.4;
-  transition: all 0.3s ease;
-  border-radius: 4px;
-  border: 1px solid #DCDFE6;
-  background-color: white;
-  color: #606266;
-}
-
-.answer-option :deep(.el-radio-button__orig-radio:checked + .el-radio-button__inner) {
-  background-color: #409EFF;
-  border-color: #409EFF;
-  color: white;
-  box-shadow: -1px 0 0 0 #409EFF;
-}
-
-.answer-option :deep(.el-radio-button__inner:hover) {
-  color: #409EFF;
-}
-
-.answers-group.multiple-group {
-  margin-top: 5px;
-}
-
-.answer-option.multiple {
-  width: 100%;
   padding: 12px 16px;
   text-align: left;
   white-space: normal;
@@ -237,23 +171,23 @@ export default QuestionType1Component
   color: #606266;
 }
 
-.answer-option.multiple:hover {
+.answer-option:hover {
   border-color: #C0C4CC;
   color: #409EFF;
 }
 
-.answer-option.multiple.selected {
+.answer-option.selected {
   background-color: #409EFF;
   border-color: #409EFF;
   color: white;
 }
 
-.answer-option.multiple.selected:hover {
+.answer-option.selected:hover {
   background-color: #66b1ff;
   border-color: #66b1ff;
 }
 
-.multiple-selector {
+.selector {
   display: flex;
   align-items: flex-start;
   gap: 12px;
@@ -264,12 +198,12 @@ export default QuestionType1Component
   display: none;
 }
 
-.answer-option.multiple.selected .checkbox {
+.answer-option.selected .checkbox {
   background-color: white;
   border-color: white;
 }
 
-.answer-option.multiple:hover .checkbox {
+.answer-option:hover .checkbox {
   border-color: #409EFF;
 }
 
@@ -284,7 +218,7 @@ export default QuestionType1Component
   font-weight: bold;
 }
 
-.answer-option.multiple.selected .checkmark {
+.answer-option.selected .checkmark {
   color: #409EFF;
 }
 
@@ -314,20 +248,11 @@ export default QuestionType1Component
     gap: 8px;
   }
 
-  .answers-group.multiple-group {
-    margin-top: 0;
-  }
-
   .answer-text {
     font-size: 0.9em;
   }
 
-  .answer-option :deep(.el-radio-button__inner) {
-    padding: 10px 12px;
-    font-size: 0.9em;
-  }
-
-  .answer-option.multiple {
+  .answer-option {
     padding: 10px 12px;
     font-size: 0.9em;
   }
