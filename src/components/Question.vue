@@ -69,7 +69,7 @@ export default QuestionComponent
   <div class="question" :class="{ 'disabled-div': showResults }" :id="`question-${index}`">
     <div v-if="qData.id_question_type == 1">
         <span class="text">Вопрос № {{ index + 1 }}</span>
-        <span class="text_question">Выберите один правильный вариант из предложенных</span>
+        <span class="text_question">Выберите все правильные варианты из предложенных</span>
         <QuestionType1Component
           :qData="{ content: qData.content, showResults, id: qData.id }"
           @answer-submitted="handleAnswer"

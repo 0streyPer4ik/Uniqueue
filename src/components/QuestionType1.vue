@@ -34,7 +34,7 @@ interface QData {
 })
 class QuestionType1Component extends Vue {
   qData!: QData
-  selectedAnswer: number | null = null
+  selectedAnswers: number[] = []
   shuffledAnswers: Answer[] = []
 
   mounted() {
@@ -50,11 +50,50 @@ class QuestionType1Component extends Vue {
     }
   }
 
-  submitAnswer() {
-    if (this.selectedAnswer === null || !this.qData.content?.answers) return
+  get hasMultipleCorrectAnswers(): boolean {
+    if (!this.qData.content?.answers) return false
+    const correctCount = this.qData.content.answers.filter(answer => answer.isCorrect).length
+    return correctCount > 1
+  }
 
-    const isCorrect = this.shuffledAnswers[this.selectedAnswer]?.isCorrect ?? false
+  toggleAnswer(index: number) {
+    const answerIndex = this.selectedAnswers.indexOf(index)
+    if (answerIndex === -1) {
+      this.selectedAnswers.push(index)
+    } else {
+      this.selectedAnswers.splice(answerIndex, 1)
+    }
+
+    this.submitAnswer()
+  }
+
+  submitAnswer() {
+    if (!this.qData.content?.answers) return
+
+    const correctIndices = this.shuffledAnswers
+      .map((answer, idx) => ({ answer, idx }))
+      .filter(item => item.answer.isCorrect)
+      .map(item => item.idx)
+
+    const incorrectIndices = this.shuffledAnswers
+      .map((answer, idx) => ({ answer, idx }))
+      .filter(item => !item.answer.isCorrect)
+      .map(item => item.idx)
+
+    const allCorrectSelected = correctIndices.every(idx =>
+      this.selectedAnswers.includes(idx)
+    )
+
+    const noIncorrectSelected = incorrectIndices.every(idx =>
+      !this.selectedAnswers.includes(idx)
+    )
+
+    const isCorrect = allCorrectSelected && noIncorrectSelected
     this.$emit('answer-submitted', isCorrect)
+  }
+
+  isAnswerSelected(index: number): boolean {
+    return this.selectedAnswers.includes(index)
   }
 }
 export default QuestionType1Component
@@ -65,21 +104,23 @@ export default QuestionType1Component
     <div class="description">
       <pre class="question-text">{{ qData.content.description?.trim() || '' }}</pre>
     </div>
-    <el-radio-group
-      v-model="selectedAnswer"
-      class="answers-group"
-      size="large"
-      @change="submitAnswer"
-    >
-      <el-radio-button
+
+    <div class="answers-group">
+      <div
         v-for="(answer, index) in shuffledAnswers"
         :key="index"
-        :label="index"
         class="answer-option"
+        :class="{ 'selected': isAnswerSelected(index) }"
+        @click="toggleAnswer(index)"
       >
-        <span class="answer-text">{{ answer.text }}</span>
-      </el-radio-button>
-    </el-radio-group>
+        <div class="selector">
+          <div class="checkbox" :class="{ 'checked': isAnswerSelected(index) }">
+            <span v-if="isAnswerSelected(index)" class="checkmark">✓</span>
+          </div>
+          <span class="answer-text">{{ answer.text }}</span>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -115,16 +156,70 @@ export default QuestionType1Component
 
 .answer-option {
   width: 100%;
-}
-
-.answer-option :deep(.el-radio-button__inner) {
-  width: 100%;
   padding: 12px 16px;
   text-align: left;
   white-space: normal;
   word-wrap: break-word;
   word-break: break-word;
   line-height: 1.4;
+  border: 1px solid #DCDFE6;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background-color: white;
+  box-sizing: border-box;
+  color: #606266;
+}
+
+.answer-option:hover {
+  border-color: #C0C4CC;
+  color: #409EFF;
+}
+
+.answer-option.selected {
+  background-color: #409EFF;
+  border-color: #409EFF;
+  color: white;
+}
+
+.answer-option.selected:hover {
+  background-color: #66b1ff;
+  border-color: #66b1ff;
+}
+
+.selector {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+}
+
+.checkbox {
+  display: none;
+}
+
+.answer-option.selected .checkbox {
+  background-color: white;
+  border-color: white;
+}
+
+.answer-option:hover .checkbox {
+  border-color: #409EFF;
+}
+
+.checkbox.checked {
+  background-color: #409EFF;
+  border-color: #409EFF;
+}
+
+.checkmark {
+  color: #409EFF;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.answer-option.selected .checkmark {
+  color: #409EFF;
 }
 
 .answer-text {
@@ -132,6 +227,7 @@ export default QuestionType1Component
   width: 100%;
   word-wrap: break-word;
   word-break: break-word;
+  flex: 1;
 }
 
 @media (min-width: 360px) and (max-width: 720px) {
@@ -156,9 +252,19 @@ export default QuestionType1Component
     font-size: 0.9em;
   }
 
-  .answer-option :deep(.el-radio-button__inner) {
+  .answer-option {
     padding: 10px 12px;
     font-size: 0.9em;
+  }
+
+  .checkbox {
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
+  }
+
+  .checkmark {
+    font-size: 12px;
   }
 }
 
