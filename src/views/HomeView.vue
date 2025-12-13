@@ -33,8 +33,8 @@ class HomeComponent extends Vue {
     this.id_level = data
   }
 
-  handleSetSubject(data: string) {
-    this.id_subject = parseInt(data)
+  handleSetSubject(data: number) {
+    this.id_subject = data
     this.answers = {}
     this.showResults = false
   }
