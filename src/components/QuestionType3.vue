@@ -1,13 +1,7 @@
 <script lang="ts">
+
 import { Options, Vue } from "vue-class-component"
 import { ArrowUp, ArrowDown } from "@element-plus/icons-vue"
-
-interface QDataContent {
-  description?: string
-  qDescription?: string[]
-  correctAnswer?: string[]
-  answersType3: AnswerType3[]
-}
 
 interface AnswerType3 {
   text: string
@@ -36,7 +30,7 @@ interface QData {
   },
   components: {
     ArrowUp,
-    ArrowDown,
+    ArrowDown
   },
   emits: ['answer-submitted'],
   watch: {
@@ -51,47 +45,71 @@ class QuestionType3Component extends Vue {
   qData!: QData
   isAnimating = false
   movingItems: {index: number, direction: number, state: 'animating' | 'complete'}[] = []
-  shuffledAnswers: {text: string, originalIndex: number}[] = [] // Changed structure
+  shuffledAnswers: {text: string, originalIndex: number}[] = []
   hasUserInteracted = false
 
   created() {
-      this.prepareAndShuffleAnswers()
+    this.prepareAndShuffleAnswers()
   }
 
   prepareAndShuffleAnswers() {
-  if (!this.qData?.content?.answersType3 || !Array.isArray(this.qData.content.answersType3)) {
-    console.error('Invalid answers data', this.qData?.content)
-    this.shuffledAnswers = []
-    return
+    if (!this.qData?.content?.answersType3 || !Array.isArray(this.qData.content.answersType3)) {
+      console.error('Invalid answers data', this.qData?.content)
+      this.shuffledAnswers = []
+      return
+    }
+
+    const answers = this.qData.content.answersType3.map(item => ({
+      text: item.text,
+      originalIndex: item.correctPosition
+    }))
+
+    const indices = Array.from({ length: answers.length }, (_, i) => i)
+
+    const allPermutations = this.getAllPermutations(indices)
+
+    const validPermutations = allPermutations.filter(perm =>
+      !this.isCorrectOrder(perm)
+    )
+
+    if (validPermutations.length === 0) {
+      this.shuffledAnswers = [...answers]
+      return
+    }
+
+    const randomPermIndex = Math.floor(Math.random() * validPermutations.length)
+    const selectedPermutation = validPermutations[randomPermIndex]
+
+    this.shuffledAnswers = selectedPermutation.map(index => answers[index])
   }
 
-  this.shuffledAnswers = this.qData.content.answersType3.map(item => ({
-    text: item.text,
-    originalIndex: item.correctPosition
-  }))
+  getAllPermutations(arr: number[]): number[][] {
+    const result: number[][] = []
 
-  for (let i = this.shuffledAnswers.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [this.shuffledAnswers[i], this.shuffledAnswers[j]] =
-      [this.shuffledAnswers[j], this.shuffledAnswers[i]]
+    const generate = (n: number, arr: number[]) => {
+      if (n === 1) {
+        result.push([...arr])
+        return
+      }
+
+      for (let i = 0; i < n; i++) {
+        generate(n - 1, arr)
+
+        if (n % 2 === 0) {
+          [arr[i], arr[n - 1]] = [arr[n - 1], arr[i]]
+        } else {
+          [arr[0], arr[n - 1]] = [arr[n - 1], arr[0]]
+        }
+      }
+    }
+
+    generate(arr.length, [...arr])
+    return result
   }
-}
 
-//   shuffleAnswers() {
-//   if (!this.qData?.content?.answersType3 || !Array.isArray(this.qData.content.answersType3)) {
-//     console.error('answersType3 is not available or not an array', this.qData.content)
-//     this.shuffledAnswers = []
-//     return
-//   }
-
-//   this.shuffledAnswers = [...this.qData.content.answersType3]
-
-//   for (let i = this.shuffledAnswers.length - 1; i > 0; i--) {
-//     const j = Math.floor(Math.random() * (i + 1));
-//     [this.shuffledAnswers[i], this.shuffledAnswers[j]] =
-//       [this.shuffledAnswers[j], this.shuffledAnswers[i]]
-//   }
-// }
+  isCorrectOrder(permutation: number[]): boolean {
+    return permutation.every((value, index) => value === index)
+  }
 
   async moveItem(index: number, direction: number) {
     if (this.isAnimating) return
