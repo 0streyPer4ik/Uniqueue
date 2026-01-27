@@ -44,15 +44,22 @@ interface MatchingData {
     'shuffledData.content.answersType2': {
       handler: 'checkAnswer',
       deep: true
+    },
+    qData: {
+      handler: 'initializeData',
+      deep: true,
+      immediate: true
     }
   }
 })
+
 export default class QuestionType2Component extends Vue {
   qData!: MatchingData
   isAnimating = false
   movingIndices: Set<number> = new Set()
   shuffledData: MatchingData | null = null
   shuffledOrder: number[] = []
+  shuffledAnswersOrder: number[] = []
   hasUserInteracted = false
 
   animationStyle: {[key: number]: {transform: string, transition: string, zIndex: number}} = {}
@@ -60,7 +67,7 @@ export default class QuestionType2Component extends Vue {
   itemHeights: number[] = []
 
   created() {
-    this.shuffleData()
+    this.initializeData()
   }
 
   mounted() {
@@ -72,9 +79,16 @@ export default class QuestionType2Component extends Vue {
     window.removeEventListener('resize', this.calculateItemHeights)
   }
 
+  initializeData() {
+    if (this.qData?.content) {
+      this.shuffleData()
+      this.hasUserInteracted = false
+    }
+  }
+
   shouldDisableDownButton(index: number): boolean {
-    const shuffledLength = this.shuffledData?.content?.answersType2?.length || 0
-    return index >= shuffledLength - 1 || this.isAnimating
+    const answers = this.shuffledData?.content?.answersType2 || this.qData?.content?.answersType2 || []
+    return index >= answers.length - 1 || this.isAnimating
   }
 
   shuffleArray<T>(array: T[]): T[] {
@@ -86,8 +100,27 @@ export default class QuestionType2Component extends Vue {
     return newArray;
   }
 
+  isMatchingCorrect(shuffledDescriptions: string[], shuffledAnswers: AnswerType2[]): boolean {
+    if (!this.qData?.content || !shuffledDescriptions || !shuffledAnswers) {
+      return false;
+    }
+
+    for (let i = 0; i < shuffledDescriptions.length; i++) {
+      const originalIndex = this.qData.content.qDescription.indexOf(shuffledDescriptions[i]);
+      if (originalIndex === -1) continue;
+
+      const answer = shuffledAnswers[i];
+      if (!answer || this.qData.content.qDescription[originalIndex] !== answer.matches) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   shuffleData() {
     if (!this.qData?.content?.answersType2 || !this.qData.content.qDescription) {
+      this.shuffledData = JSON.parse(JSON.stringify(this.qData));
       return;
     }
 
@@ -97,15 +130,23 @@ export default class QuestionType2Component extends Vue {
       return;
     }
 
-    this.shuffledData.content.answersType2 = this.shuffleArray([...this.qData.content.answersType2]);
+    let isCorrect = true;
 
-    const shuffledDescriptions = this.shuffleArray([...this.qData.content.qDescription]);
+    do {
+      const originalDescriptions = this.qData.content.qDescription.map((desc, index) => ({ index, value: desc }));
+      const originalAnswers = this.qData.content.answersType2.map((ans, index) => ({ index, value: ans }));
 
-    this.shuffledOrder = shuffledDescriptions.map(desc =>
-      this.qData.content!.qDescription.indexOf(desc)
-    );
+      const shuffledDescriptions = this.shuffleArray([...originalDescriptions]);
+      this.shuffledData.content.qDescription = shuffledDescriptions.map(item => item.value);
+      this.shuffledOrder = shuffledDescriptions.map(item => item.index);
 
-    this.shuffledData.content.qDescription = shuffledDescriptions;
+      const shuffledAnswers = this.shuffleArray([...originalAnswers]);
+      this.shuffledData.content.answersType2 = shuffledAnswers.map(item => item.value);
+      this.shuffledAnswersOrder = shuffledAnswers.map(item => item.index);
+
+      isCorrect = this.isMatchingCorrect(this.shuffledData.content.qDescription, this.shuffledData.content.answersType2);
+
+    } while (isCorrect);
 
     this.$nextTick(() => {
       this.calculateItemHeights()
@@ -114,6 +155,10 @@ export default class QuestionType2Component extends Vue {
 
   getOriginalIndex(shuffledIndex: number) {
     return this.shuffledOrder[shuffledIndex]
+  }
+
+  getOriginalAnswerIndex(shuffledIndex: number) {
+    return this.shuffledAnswersOrder[shuffledIndex]
   }
 
   calculateItemHeights() {
@@ -147,10 +192,13 @@ export default class QuestionType2Component extends Vue {
   }
 
   async moveItem(index: number, direction: number) {
-    if (this.isAnimating || !this.shuffledData?.content) return
+    if (this.isAnimating) return
+
+    const answers = this.shuffledData?.content?.answersType2 || this.qData?.content?.answersType2
+    if (!answers) return
 
     const newIndex = index + direction
-    if (newIndex < 0 || newIndex >= this.shuffledData.content.answersType2.length) return
+    if (newIndex < 0 || newIndex >= answers.length) return
 
     this.hasUserInteracted = true
     this.isAnimating = true
@@ -172,8 +220,11 @@ export default class QuestionType2Component extends Vue {
     }
 
     setTimeout(() => {
-      if (this.shuffledData?.content?.answersType2) {
-        const newAnswers = [...this.shuffledData.content.answersType2]
+      const dataToModify = this.shuffledData || this.qData
+
+      if (dataToModify?.content?.answersType2) {
+        const newAnswers = [...dataToModify.content.answersType2]
+        const newAnswersOrder = this.shuffledData ? [...this.shuffledAnswersOrder] : [...Array(newAnswers.length).keys()]
 
         if (index >= 0 && index < newAnswers.length &&
             newIndex >= 0 && newIndex < newAnswers.length) {
@@ -182,9 +233,15 @@ export default class QuestionType2Component extends Vue {
             newAnswers[index],
           ]
 
-          if (this.shuffledData.content) {
-            this.shuffledData.content.answersType2 = newAnswers
+          if (this.shuffledData) {
+            [newAnswersOrder[index], newAnswersOrder[newIndex]] = [
+              newAnswersOrder[newIndex],
+              newAnswersOrder[index],
+            ]
+            this.shuffledAnswersOrder = newAnswersOrder
           }
+
+          dataToModify.content.answersType2 = newAnswers
         }
       }
 
@@ -230,19 +287,29 @@ export default class QuestionType2Component extends Vue {
   }
 
   checkAnswer() {
-    if (!this.shuffledData?.content || !this.qData?.content || !this.hasUserInteracted) {
+    if (!this.hasUserInteracted) {
       this.$emit('answer-submitted', null)
       return
     }
 
+    const currentData = this.shuffledData || this.qData
+
+    if (!currentData?.content || !this.qData?.content) {
+      this.$emit('answer-submitted', false)
+      return
+    }
+
     let allCorrect = true
-    for (let i = 0; i < this.shuffledData.content.qDescription.length; i++) {
-      const originalIndex = this.getOriginalIndex(i)
-      if (
-        !this.qData.content.qDescription?.[originalIndex] ||
-        !this.shuffledData.content.answersType2?.[i] ||
-        this.qData.content.qDescription[originalIndex] !== this.shuffledData.content.answersType2[i].matches
-      ) {
+    for (let i = 0; i < currentData.content.qDescription.length; i++) {
+      let originalIndex = i
+      if (this.shuffledData) {
+        originalIndex = this.getOriginalIndex(i)
+      }
+
+      const description = currentData.content.qDescription[i]
+      const answer = currentData.content.answersType2[i]
+
+      if (!description || !answer || this.qData.content.qDescription[originalIndex] !== answer.matches) {
         allCorrect = false
         break
       }
@@ -250,24 +317,28 @@ export default class QuestionType2Component extends Vue {
 
     this.$emit('answer-submitted', allCorrect)
   }
+
+  getDisplayData() {
+    return this.shuffledData || this.qData
+  }
 }
 </script>
 
 <template>
   <div class="question-container">
     <div class="description">
-      {{ shuffledData?.content?.description || qData?.content?.description }}
+      {{ getDisplayData()?.content?.description }}
     </div>
 
     <div class="matching-container">
       <div class="definitions-column">
         <div
           class="definition-item-wrapper"
-          v-for="(description, index) in shuffledData?.content?.qDescription || qData?.content?.qDescription"
+          v-for="(description, index) in getDisplayData()?.content?.qDescription || []"
           :key="'def-' + index"
           :style="{
             height: itemHeights[index] ? `${itemHeights[index]}px` : 'auto',
-            marginBottom: index < ((shuffledData?.content?.qDescription?.length || 0) - 1) ? '16px' : '0'
+            marginBottom: index < ((getDisplayData()?.content?.qDescription?.length || 0) - 1) ? '16px' : '0'
           }"
         >
           <div class="definition-item">
@@ -281,11 +352,11 @@ export default class QuestionType2Component extends Vue {
       <div class="terms-column">
         <div
           class="term-item-wrapper"
-          v-for="(answer, index) in shuffledData?.content?.answersType2 || qData?.content?.answersType2"
+          v-for="(answer, index) in getDisplayData()?.content?.answersType2 || []"
           :key="'term-' + index"
           :style="{
             height: itemHeights[index] ? `${itemHeights[index]}px` : 'auto',
-            marginBottom: index < ((shuffledData?.content?.answersType2?.length || 0) - 1) ? '16px' : '0'
+            marginBottom: index < ((getDisplayData()?.content?.answersType2?.length || 0) - 1) ? '16px' : '0'
           }"
         >
           <div
@@ -293,7 +364,7 @@ export default class QuestionType2Component extends Vue {
             :style="getTermItemStyle(index)"
           >
             <div class="term-content">
-              <div class="item-text">{{ answer.text }}</div>
+              <div class="item-text">{{ answer?.text }}</div>
             </div>
 
             <div class="term-buttons">
@@ -344,6 +415,7 @@ export default class QuestionType2Component extends Vue {
   justify-content: center;
   align-items: flex-start;
   position: relative;
+  min-height: 200px;
 }
 
 .definitions-column,
@@ -419,7 +491,7 @@ export default class QuestionType2Component extends Vue {
   word-break: break-word;
   overflow-wrap: break-word;
   min-height: 0;
-  color: black;
+  color: #2c3e50;
 }
 
 .term-buttons {
