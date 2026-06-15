@@ -1,20 +1,20 @@
 <script lang="ts">
-import { Options, Vue } from "vue-class-component"
-import { ElInput } from 'element-plus'
+import { Options, Vue } from "vue-class-component";
+import { ElInput } from "element-plus";
 
 interface QDataContent {
-  description: string
-  correctAnswer?: string
+  description: string;
+  correctAnswer?: string;
 }
 
 interface QData {
-  id: number
-  description: string
-  correctAnswer?: string
-  correctAnswers?: (number | string)[]
-  content: QDataContent
-  id_question_type: number
-  userAnswer: string | null | undefined
+  id: number;
+  description: string;
+  correctAnswer?: string;
+  correctAnswers?: (number | string)[];
+  content: QDataContent;
+  id_question_type: number;
+  userAnswer: string | null | undefined;
 }
 
 @Options({
@@ -27,17 +27,17 @@ interface QData {
   components: {
     ElInput,
   },
-  emits: ['answer-submitted'],
+  emits: ["answer-submitted"],
   watch: {
-    'qData.userAnswer': {
-      handler: 'checkAnswer',
-      immediate: false
-    }
-  }
+    "qData.userAnswer": {
+      handler: "checkAnswer",
+      immediate: false,
+    },
+  },
 })
 class QuestionType4Component extends Vue {
   qData!: QData;
-  inputWidth = '200px';
+  inputWidth = "200px";
   hasUserInteracted = false;
 
   mounted() {
@@ -59,7 +59,7 @@ class QuestionType4Component extends Vue {
     if (this.qData.correctAnswers && this.qData.correctAnswers.length > 0) {
       return String(this.qData.correctAnswers[0]);
     }
-    return '';
+    return "";
   }
 
   checkAnswer(newVal: string | null | undefined, oldVal: string | null | undefined) {
@@ -70,29 +70,47 @@ class QuestionType4Component extends Vue {
     if (newVal?.trim()) {
       const correctAnswer = this.getCorrectAnswer();
       const isCorrect = newVal.toLowerCase().trim() === correctAnswer.toLowerCase().trim();
-      this.$emit('answer-submitted', isCorrect);
+      this.$emit("answer-submitted", isCorrect);
     } else {
-      this.$emit('answer-submitted', null);
+      this.$emit("answer-submitted", null);
     }
   }
+
+  get splitDescription(): string[] {
+    if (!this.qData?.content?.description) {
+      return ["_____"];
+    }
+
+    const parts = this.qData.content.description.split(/(_{5,})/);
+
+    if (parts.length === 1) {
+      return [...parts, "_____"];
+    }
+
+    return parts;
+  }
 }
-export default QuestionType4Component
+export default QuestionType4Component;
 </script>
 
 <template>
   <div class="question-container">
     <div class="question-text">
-      {{ qData.content?.description?.replace('—', '') ?? '' }}
-      <span class="input-wrapper">
-        <el-input
-          v-model="qData.userAnswer"
-          :style="{ width: inputWidth }"
-          placeholder="Введите ответ"
-          clearable
-          class="answer-input"
-          @input="hasUserInteracted = true"
-        />
-      </span>
+      <template v-if="qData.content.description">
+        <template v-for="(part, index) in splitDescription" :key="index">
+          <ElInput
+            v-if="part.match(/_{5,}/)"
+            v-model="qData.userAnswer"
+            :style="{ width: inputWidth }"
+            placeholder="Введите ответ"
+            clearable
+            class="inline-input"
+            @input="hasUserInteracted = true"
+          />
+          <span v-else>{{ part }}</span>
+        </template>
+      </template>
+      <span v-else>Описание вопроса отсутствует</span>
     </div>
   </div>
 </template>
@@ -112,7 +130,6 @@ export default QuestionType4Component
   word-break: break-word;
   line-height: 1.9;
   font-size: 20px;
-  color: white;
 }
 
 .input-wrapper {

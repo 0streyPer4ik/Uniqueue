@@ -1,6 +1,6 @@
-import { ref, computed, defineComponent } from 'vue'
+import { ref, computed, defineComponent, reactive } from 'vue'
 import { defineStore, mapStores, mapState, mapActions } from 'pinia'
-import type { SubjectInterface } from '@/interfaces/QuestionInterface'
+import type { SubjectInterface, TeacherInterface, QuestionInterface, GroupInterface } from '@/interfaces/QuestionInterface'
 
 export const useCounterStore = defineStore('counter', () => {
   const count = ref(0)
@@ -12,41 +12,29 @@ export const useCounterStore = defineStore('counter', () => {
   return { count, doubleCount, increment }
 })
 
-interface ListItemInterface {
-  id: number;
-  id_question_type: number;
-  id_subject: number;
-  additionalText?: string;
-  content: {
-    description?: string;          // Для QuestionType1
-    qDescription?: string[];       // Для других типов
-    answers?: Array<{              // Для QuestionType1
-      text: string;
-      isCorrect: boolean;
-    }>;
-    correctAnswer?: string[];      // Для QuestionType4,5
-    answersType2?: Array<{         // Для QuestionType2
-      text: string;
-      matches: string;
-    }>;
-  };
-}
 
-export const questionStore = defineStore('question', {
+
+export const QuestionStore = defineStore('question', {
   state: () => ({
-    list: [] as ListItemInterface[],
+    list: [] as QuestionInterface[],
   }),
   getters: {
-    getQuestions(state): ListItemInterface[] {
+    getQuestions(state): QuestionInterface[] {
       return state.list
-    }
+    },
+
+    getQuestion: (state) => {
+      return (id: number) => computed(() => {
+        return state.list.find(subject => subject.id == id)
+      })
+    },
   },
   actions: {
-    async setQuestions(list: ListItemInterface[]) {
+    async setQuestions(list: QuestionInterface[]) {
       this.list = list
     },
 
-    addQuestion(question: ListItemInterface) {
+    addQuestion(question: QuestionInterface) {
       this.list.push(question)
     }
   }
@@ -59,7 +47,12 @@ export const SubjectsStore = defineStore('subjects', {
   getters: {
     getSubjects(state): SubjectInterface[] {
       return state.list
-    }
+    },
+    getSubject(state) {
+      return (id: number): SubjectInterface | undefined => {
+        return state.list.find(subject => subject.id === id)
+      }
+    },
   },
   actions: {
     async setSubjects(list: SubjectInterface[]) {
@@ -68,11 +61,48 @@ export const SubjectsStore = defineStore('subjects', {
   }
 })
 
+
+export const TeachersStore = defineStore('teachers', {
+  state: () => ({
+    list: [] as TeacherInterface[],
+  }),
+  getters: {
+    getTeachers(state): TeacherInterface[] {
+      return state.list
+    }
+  },
+  actions: {
+    async setTeachers(list: TeacherInterface[]) {
+      this.list = list
+    },
+  }
+})
+
+
+
+
+export const GroupsStore = defineStore('groups', {
+  state: () => ({
+    list: [] as GroupInterface[],
+  }),
+  getters: {
+    getGroups(state): GroupInterface[] {
+      return state.list
+    }
+  },
+  actions: {
+    async setGroups(list: GroupInterface[]) {
+      this.list = list
+    },
+  }
+})
+
 export default defineComponent({
   computed: {
-    ...mapStores(useCounterStore, questionStore),
+    ...mapStores(useCounterStore, QuestionStore, TeachersStore),
     ...mapState(useCounterStore, ['count']),
-    ...mapState(questionStore, ['list']),
+    ...mapState(QuestionStore, ['list']),
+    ...mapState(TeachersStore, ['list']),
   },
   methods: {
     ...mapActions(useCounterStore, ['increment']),

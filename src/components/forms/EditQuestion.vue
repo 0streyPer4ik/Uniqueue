@@ -1,66 +1,68 @@
 <script lang="ts">
-import { Options, Vue } from "vue-class-component"
-import axios from 'axios'
-import type { AxiosResponse } from 'axios'
-import { ElMessage } from 'element-plus'
-import { ArrowUp, ArrowDown } from "@element-plus/icons-vue"
+import { Options, Vue } from "vue-class-component";
+import axios from "axios";
+import type { AxiosResponse } from "axios";
+import { ElMessage } from "element-plus";
+import { ArrowUp, ArrowDown } from "@element-plus/icons-vue";
 
 interface QDataContent {
-  description: string
-  answers: Answer[]
-  qDescription?: string[]
-  answersType2?: AnswerType2[]
-  answersType3?: AnswerType3[]
-  correctAnswer?: string[] | string
-  correctAnswerType4?: string
+  description: string;
+  answers: Answer[];
+  qDescription?: string[];
+  answersType2?: AnswerType2[];
+  answersType3?: AnswerType3[];
+  correctAnswer?: string[] | string;
+  correctAnswerType4?: string;
 }
 
 interface Answer {
-  text: string
-  isCorrect: boolean
+  text: string;
+  isCorrect: boolean;
 }
 
 interface AnswerType2 {
-  text: string
-  matches: string
+  text: string;
+  matches: string;
 }
 
 interface AnswerType3 {
-  text: string
-  correctPosition: number
+  text: string;
+  correctPosition: number;
 }
 
 interface Question {
-  id: number
-  id_question_type: number
-  content: QDataContent | string
-  id_subject: number
+  id: number;
+  id_question_type: number;
+  content: QDataContent | string;
+  id_subject: number;
 }
 
 @Options({
-  components: { ArrowUp, ArrowDown }
+  components: {
+    ArrowUp,
+    ArrowDown,
+  },
 })
-
 class QuestionType1Component extends Vue {
   id: number = 0;
   question: Question = {
-    "id": 0,
-    "id_question_type": 1,
-    "content": {
-      "description": "",
-      "answers": [
+    id: 0,
+    id_question_type: 1,
+    content: {
+      description: "",
+      answers: [
         { text: "", isCorrect: false },
         { text: "", isCorrect: false },
         { text: "", isCorrect: false },
         { text: "", isCorrect: false },
-        { text: "", isCorrect: false }
+        { text: "", isCorrect: false },
       ],
-      "qDescription": [],
-      "answersType2": [],
-      "answersType3": [],
-      "correctAnswer": []
+      qDescription: [],
+      answersType2: [],
+      answersType3: [],
+      correctAnswer: [],
     },
-    "id_subject": 0
+    id_subject: 0,
   };
 
   mounted() {
@@ -68,19 +70,20 @@ class QuestionType1Component extends Vue {
     if (idParam && !Array.isArray(idParam) && parseInt(idParam) > 0) {
       this.id = parseInt(idParam);
 
-      axios.get<Question>('/questions/' + this.id)
+      axios
+        .get<Question>("/questions/" + this.id)
         .then((response: AxiosResponse<Question>) => {
           this.question = response.data;
-          this.transformQuestionContent()
+          this.transformQuestionContent();
         })
-        .catch(error => {
-          console.error('Ошибка при получении вопроса:', error)
+        .catch((error) => {
+          console.error("Ошибка при получении вопроса:", error);
         });
     }
   }
 
   transformQuestionContent() {
-    if (typeof this.question.content === 'string') {
+    if (typeof this.question.content === "string") {
       try {
         const parsedContent = JSON.parse(this.question.content);
         // Ensure all required fields are present
@@ -90,7 +93,8 @@ class QuestionType1Component extends Vue {
           qDescription: parsedContent.qDescription || [],
           answersType2: parsedContent.answersType2 || [],
           answersType3: parsedContent.answersType3 || [],
-          correctAnswer: parsedContent.correctAnswer || (this.question.id_question_type === 4 ? "" : [])
+          correctAnswer:
+            parsedContent.correctAnswer || (this.question.id_question_type === 4 ? "" : []),
         };
       } catch (e) {
         console.error("Ошибка парсинга content", e);
@@ -100,7 +104,7 @@ class QuestionType1Component extends Vue {
           qDescription: [],
           answersType2: [],
           answersType3: [],
-          correctAnswer: this.question.id_question_type === 4 ? "" : []
+          correctAnswer: this.question.id_question_type === 4 ? "" : [],
         };
       }
     }
@@ -113,7 +117,7 @@ class QuestionType1Component extends Vue {
           { text: "", isCorrect: false },
           { text: "", isCorrect: false },
           { text: "", isCorrect: false },
-          { text: "", isCorrect: false }
+          { text: "", isCorrect: false },
         ];
       }
     } else if (this.question.id_question_type === 2) {
@@ -128,7 +132,7 @@ class QuestionType1Component extends Vue {
         this.question.content.answersType3 = [];
       }
     } else if (this.question.id_question_type === 4) {
-      if (typeof this.question.content.correctAnswer !== 'string') {
+      if (typeof this.question.content.correctAnswer !== "string") {
         this.question.content.correctAnswer = "";
       }
     } else if (this.question.id_question_type === 5) {
@@ -140,20 +144,20 @@ class QuestionType1Component extends Vue {
 
   // Methods for type 1 questions
   addAnswer() {
-    if (this.question && typeof this.question.content !== 'string') {
+    if (this.question && typeof this.question.content !== "string") {
       this.question.content.answers.push({ text: "", isCorrect: false });
     }
   }
 
   removeAnswer(index: number) {
-    if (this.question && typeof this.question.content !== 'string') {
+    if (this.question && typeof this.question.content !== "string") {
       this.question.content.answers.splice(index, 1);
     }
   }
 
   resetCorrectAnswers() {
-    if (this.question && typeof this.question.content !== 'string') {
-      this.question.content.answers.forEach(answer => {
+    if (this.question && typeof this.question.content !== "string") {
+      this.question.content.answers.forEach((answer) => {
         answer.isCorrect = false;
       });
     }
@@ -161,18 +165,26 @@ class QuestionType1Component extends Vue {
 
   // Methods for type 2 questions
   addQuestion() {
-    if (this.question && typeof this.question.content !== 'string' && this.question.content.qDescription) {
+    if (
+      this.question &&
+      typeof this.question.content !== "string" &&
+      this.question.content.qDescription
+    ) {
       this.question.content.qDescription.push("");
     }
   }
 
   removeQuestion(index: number) {
-    if (this.question && typeof this.question.content !== 'string' && this.question.content.qDescription) {
+    if (
+      this.question &&
+      typeof this.question.content !== "string" &&
+      this.question.content.qDescription
+    ) {
       const removedQuestion = this.question.content.qDescription[index];
       this.question.content.qDescription.splice(index, 1);
 
       if (this.question.content.answersType2) {
-        this.question.content.answersType2.forEach(answer => {
+        this.question.content.answersType2.forEach((answer) => {
           if (answer.matches === removedQuestion) {
             answer.matches = "";
           }
@@ -182,28 +194,33 @@ class QuestionType1Component extends Vue {
   }
 
   removeAnswerType2(index: number) {
-    if (this.question && typeof this.question.content !== 'string' && this.question.content.answersType2) {
+    if (
+      this.question &&
+      typeof this.question.content !== "string" &&
+      this.question.content.answersType2
+    ) {
       this.question.content.answersType2.splice(index, 1);
     }
   }
 
   moveItem(index: number, direction: number) {
-    if (this.question && typeof this.question.content !== 'string' && this.question.content.answersType2) {
+    if (
+      this.question &&
+      typeof this.question.content !== "string" &&
+      this.question.content.answersType2
+    ) {
       const newIndex = index + direction;
 
       if (newIndex >= 0 && newIndex < this.question.content.answersType2.length) {
         const newAnswers = [...this.question.content.answersType2];
-        [newAnswers[index], newAnswers[newIndex]] = [
-          newAnswers[newIndex],
-          newAnswers[index],
-        ];
+        [newAnswers[index], newAnswers[newIndex]] = [newAnswers[newIndex], newAnswers[index]];
         this.question.content.answersType2 = newAnswers;
       }
     }
   }
 
   addAnswerType2() {
-    if (this.question && typeof this.question.content !== 'string') {
+    if (this.question && typeof this.question.content !== "string") {
       if (!this.question.content.answersType2) {
         this.question.content.answersType2 = [];
       }
@@ -212,7 +229,7 @@ class QuestionType1Component extends Vue {
   }
 
   addAnswerType3() {
-    if (this.question && typeof this.question.content !== 'string') {
+    if (this.question && typeof this.question.content !== "string") {
       if (!this.question.content.answersType3) {
         this.question.content.answersType3 = [];
       }
@@ -221,7 +238,7 @@ class QuestionType1Component extends Vue {
   }
 
   addCorrectAnswer() {
-    if (this.question && typeof this.question.content !== 'string') {
+    if (this.question && typeof this.question.content !== "string") {
       if (!Array.isArray(this.question.content.correctAnswer)) {
         this.question.content.correctAnswer = [];
       }
@@ -230,13 +247,21 @@ class QuestionType1Component extends Vue {
   }
 
   removeCorrectAnswer(index: number) {
-    if (this.question && typeof this.question.content !== 'string' && Array.isArray(this.question.content.correctAnswer)) {
+    if (
+      this.question &&
+      typeof this.question.content !== "string" &&
+      Array.isArray(this.question.content.correctAnswer)
+    ) {
       this.question.content.correctAnswer.splice(index, 1);
     }
   }
 
   removeAnswerType3(index: number) {
-    if (this.question && typeof this.question.content !== 'string' && this.question.content.answersType3) {
+    if (
+      this.question &&
+      typeof this.question.content !== "string" &&
+      this.question.content.answersType3
+    ) {
       this.question.content.answersType3.splice(index, 1);
     }
   }
@@ -245,7 +270,7 @@ class QuestionType1Component extends Vue {
     if (this.question) {
       let contentToSave;
 
-      if (typeof this.question.content === 'string') {
+      if (typeof this.question.content === "string") {
         try {
           contentToSave = JSON.parse(this.question.content);
         } catch (e) {
@@ -256,7 +281,7 @@ class QuestionType1Component extends Vue {
         if (this.question.id_question_type === 1) {
           contentToSave = {
             description: this.question.content.description,
-            answers: this.question.content.answers.map(answer => ({
+            answers: this.question.content.answers.map((answer) => ({
               text: answer.text,
               isCorrect: answer.isCorrect,
             })),
@@ -265,7 +290,7 @@ class QuestionType1Component extends Vue {
           contentToSave = {
             description: this.question.content.description,
             qDescription: this.question.content.qDescription,
-            answersType2: this.question.content.answersType2
+            answersType2: this.question.content.answersType2,
           };
         } else if (this.question.id_question_type === 3) {
           contentToSave = {
@@ -290,19 +315,20 @@ class QuestionType1Component extends Vue {
         content: JSON.stringify(contentToSave),
       };
 
-      axios.put('/questions/' + this.id, updatedQuestion)
-        .then(response => {
-          console.log('Вопросы сохранены', response);
+      axios
+        .put("/questions/" + this.id, updatedQuestion)
+        .then((response) => {
+          console.log("Вопросы сохранены", response);
           ElMessage({
-            message: 'Успешно сохранено!',
-            type: 'success',
+            message: "Успешно сохранено!",
+            type: "success",
           });
         })
-        .catch(error => {
-          console.error('Ошибка!', error);
+        .catch((error) => {
+          console.error("Ошибка!", error);
           ElMessage({
-            message: 'Ошибка при сохранении!',
-            type: 'error',
+            message: "Ошибка при сохранении!",
+            type: "error",
           });
         });
     }
@@ -313,19 +339,15 @@ export default QuestionType1Component;
 
 <template>
   <div>
-    <h2>Редактировать вопрос</h2>
-    <br>
+    <h2>Редактировать вопрос № {{ id }}</h2>
+    <h3>Тип {{ question.id_question_type }}</h3>
+    <br />
 
     <div v-if="question.id_question_type === 1 && typeof question.content !== 'string'">
-      <el-input
-        v-model="question.content.description"
-        type="textarea"
-        placeholder="Описание вопроса"
-        style="width: 100%; margin-bottom: 15px;"
-      />
+      <el-input v-model="question.content.description" type="textarea" placeholder="Описание вопроса" style="width: 100%; margin-bottom: 15px" />
 
-      <div v-for="(answer, index) in question.content.answers" :key="index" style="margin-bottom: 10px;">
-        <el-input v-model="answer.text" style="width: 800px;">
+      <div v-for="(answer, index) in question.content.answers" :key="index" style="margin-bottom: 10px">
+        <el-input v-model="answer.text" style="width: 800px">
           <template #prepend>
             <el-checkbox v-model="answer.isCorrect"></el-checkbox>
           </template>
@@ -341,50 +363,28 @@ export default QuestionType1Component;
     </div>
 
     <div v-else-if="question.id_question_type === 2 && typeof question.content !== 'string'">
-      <el-input
-        v-model="question.content.description"
-        placeholder="Описание вопроса"
-        style="width: 100%; margin-bottom: 15px;"
-      />
+      <el-input v-model="question.content.description" placeholder="Описание вопроса" style="width: 100%; margin-bottom: 15px" />
 
-       <div v-if="typeof question.content !== 'string' && question.content.qDescription">
-      <h4>Вопросы:</h4>
-      <div
-        v-for="(qDescription, index) in question.content.qDescription"
-        :key="'q' + index"
-        style="margin-bottom: 10px;"
-      >
-        <el-input
-          v-model="question.content.qDescription[index]"
-          placeholder="Вопрос"
-          style="width: 800px;"
-        >
-          <template #append>
-            <el-button @click="removeQuestion(index)" type="danger" size="small">Удалить</el-button>
-          </template>
-        </el-input>
+      <div v-if="typeof question.content !== 'string' && question.content.qDescription">
+        <h4>Вопросы:</h4>
+        <div v-for="(qDescription, index) in question.content.qDescription" :key="'q' + index" style="margin-bottom: 10px">
+          <el-input v-model="question.content.qDescription[index]" placeholder="Вопрос" style="width: 800px">
+            <template #append>
+              <el-button @click="removeQuestion(index)" type="danger" size="small">Удалить</el-button>
+            </template>
+          </el-input>
+        </div>
+        <el-button @click="addQuestion" type="" style="margin-bottom: 15px" :disabled="typeof question.content === 'string'">
+          Добавить вопрос
+        </el-button>
       </div>
-      <el-button
-        @click="addQuestion"
-        type=""
-        style="margin-bottom: 15px;"
-        :disabled="typeof question.content === 'string'"
-      >
-        Добавить вопрос
-      </el-button>
-    </div>
 
       <h4>Ответы:</h4>
-      <div v-for="(answer, index) in question.content.answersType2" :key="'a' + index" style="margin-bottom: 15px;">
-        <div style="display: flex; align-items: center;">
-          <el-input v-model="answer.text" placeholder="Ответ" style="flex: 1; margin-right: 10px;"></el-input>
-          <el-select v-model="answer.matches" placeholder="Соответствующий вопрос" style="width: 200px; margin-right: 10px;">
-            <el-option
-              v-for="(qDescription, qIndex) in question.content.qDescription"
-              :key="'match' + qIndex"
-              :value="qDescription"
-              :label="qDescription"
-            ></el-option>
+      <div v-for="(answer, index) in question.content.answersType2" :key="'a' + index" style="margin-bottom: 15px">
+        <div style="display: flex; align-items: center">
+          <el-input v-model="answer.text" placeholder="Ответ" style="flex: 1; margin-right: 10px"></el-input>
+          <el-select v-model="answer.matches" placeholder="Соответствующий вопрос" style="width: 200px; margin-right: 10px">
+            <el-option v-for="(qDescription, qIndex) in question.content.qDescription" :key="'match' + qIndex" :value="qDescription" :label="qDescription"></el-option>
           </el-select>
           <el-button @click="removeAnswerType2(index)" type="danger" size="small">
             Удалить
@@ -396,25 +396,13 @@ export default QuestionType1Component;
     </div>
 
     <div v-else-if="question.id_question_type === 3 && typeof question.content !== 'string'" class="question-type-3-editor">
-      <el-input
-        type="textarea"
-        v-model="question.content.description"
-        placeholder="Описание вопроса"
-        class="question-description-input"
-      />
+      <el-input type="textarea" v-model="question.content.description" placeholder="Описание вопроса" class="question-description-input" />
 
       <h4>Ответы:</h4>
       <div v-for="(answer, index) in question.content.answersType3" :key="'a3' + index" class="answer-item">
         <div class="answer-container">
           <el-input v-model="answer.text" placeholder="Текст ответа" class="answer-input" />
-          <el-input
-            v-model.number="answer.correctPosition"
-            type="number"
-            placeholder="Правильная позиция"
-            class="answer-position-input"
-            min="0"
-            :max="question.content.answersType3 ? question.content.answersType3.length - 1 : 0"
-          />
+          <el-input v-model.number="answer.correctPosition" type="number" placeholder="Правильная позиция" class="answer-position-input" min="0" :max="question.content.answersType3 ? question.content.answersType3.length - 1 : 0" />
           <el-button @click="removeAnswerType3(index)" type="danger" size="small">Удалить</el-button>
         </div>
       </div>
@@ -423,42 +411,22 @@ export default QuestionType1Component;
     </div>
 
     <div v-else-if="question.id_question_type === 4 && typeof question.content !== 'string'" class="question-type-4-editor">
-      <el-input
-        v-model="question.content.description"
-        type="textarea"
-        placeholder="Описание вопроса"
-        class="question-description-input"
-      />
+      <el-input v-model="question.content.description" type="textarea" placeholder="Описание вопроса" class="question-description-input" />
 
-      <el-input
-        v-model="question.content.correctAnswer"
-        placeholder="Правильный ответ"
-        class="correct-answer-input"
-      />
+      <el-input v-model="question.content.correctAnswer" placeholder="Правильный ответ" class="correct-answer-input" />
 
       <el-button type="primary" @click="saveQuestion">Сохранить</el-button>
     </div>
 
     <div v-else-if="question.id_question_type === 5 && typeof question.content !== 'string'" class="question-type-5-editor">
-      <el-input
-        v-model="question.content.description"
-        type="textarea"
-        placeholder="Описание вопроса"
-        class="question-description-input"
-      />
+      <el-input v-model="question.content.description" type="textarea" placeholder="Описание вопроса" class="question-description-input" />
 
       <h4>Правильные ответы:</h4>
-      <div v-if="Array.isArray(question.content.correctAnswer) && question.content.correctAnswer.length">
-        <div
-          v-for="(answer, index) in question.content.correctAnswer"
-          :key="'ca' + index"
-          class="correct-answer-item"
-        >
-          <el-input
-            v-model="question.content.correctAnswer[index]"
-            placeholder="Правильный ответ"
-            class="correct-answer-input"
-          >
+      <div v-if="
+        Array.isArray(question.content.correctAnswer) && question.content.correctAnswer.length
+      ">
+        <div v-for="(answer, index) in question.content.correctAnswer" :key="'ca' + index" class="correct-answer-item">
+          <el-input v-model="question.content.correctAnswer[index]" placeholder="Правильный ответ" class="correct-answer-input">
             <template #append>
               <el-button @click="removeCorrectAnswer(index)" type="danger" size="small">
                 Удалить

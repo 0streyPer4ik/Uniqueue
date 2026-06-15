@@ -1,5 +1,5 @@
 .question_type_1 {
-      width: 100%; 
+  width: 100%;
 }
 
 .question-text {
@@ -11,13 +11,13 @@
 }
 
 .matching-container {
-  margin: 15px 0 0 0 ;
+  margin: 15px 0 0 0;
 }
-  
+
 pre {
   font-size: 22px;
   max-width: auto;
-  white-space: pre-wrap; 
+  white-space: pre-wrap;
   word-wrap: break-word;
 }
 
@@ -30,7 +30,6 @@ pre {
   overflow-x: hidden;
 }
 
-
 // ЦВЕТ ТЕКСТА //
 span.el-alert__title,
 span.el-radio-button__inner,
@@ -38,7 +37,6 @@ div.el-alert.el-alert--info.is-light.arrow {
   color: rgb(34, 34, 34);
   font-weight: 400;
 }
-
 
 // ГЛАВНЫЙ СТИЛЬ //
 .question {
@@ -48,7 +46,6 @@ div.el-alert.el-alert--info.is-light.arrow {
   .text {
     font-size: 25px;
     margin-left: 10px;
-    
   }
 
   .text_question {
@@ -58,7 +55,6 @@ div.el-alert.el-alert--info.is-light.arrow {
   .description {
     font-size: 20px;
     font-weight: 400;
-    color: white;
     margin-top: 8px;
   }
 
@@ -71,8 +67,7 @@ div.el-alert.el-alert--info.is-light.arrow {
     border-radius: 5px !important;
   }
 
-
-  // РАССТОЯНИЕ МЕЖДУ ВОПРОСАМИ // 
+  // РАССТОЯНИЕ МЕЖДУ ВОПРОСАМИ //
   .question1,
   .question3,
   .question4,
@@ -86,8 +81,7 @@ div.el-alert.el-alert--info.is-light.arrow {
   }
 }
 
-
-// ЭКРАН 1024 // 
+// ЭКРАН 1024 //
 @media (min-width: 1024px) {
   .question {
     width: 1024px;
@@ -112,7 +106,6 @@ div.el-alert.el-alert--info.is-light.arrow {
   }
 }
 
-
 // ЭКРАН 540 //
 @media (max-width: 540px) {
   label.el-radio-button.el-radio-button--large {
@@ -122,11 +115,7 @@ div.el-alert.el-alert--info.is-light.arrow {
   .question1 {
     max-width: 300px;
   }
-
-
-
 }
-
 
 // ЭКРАН 485 //
 @media (max-width: 485px) {
@@ -145,20 +134,20 @@ div.el-alert.el-alert--info.is-light.arrow {
   }
 
   span.el-alert__title {
-    font-size: .7em;
+    font-size: 0.7em;
     color: rgb(34, 34, 34);
   }
 
   div.el-alert.el-alert--info.is-light.arrow {
-    font-size: .9em;
+    font-size: 0.9em;
   }
 
   div.el-alert.el-alert--info.is-light {
-    font-size: .9em;
+    font-size: 0.9em;
   }
 
   span.el-alert__title {
-    font-size: .8em;
+    font-size: 0.8em;
   }
 
   .qustion1_text {
@@ -166,28 +155,28 @@ div.el-alert.el-alert--info.is-light.arrow {
   }
 
   .el-alert__title {
-    line-height: 1.3   !important;
+    line-height: 1.3 !important;
     font-size: 0.6em;
   }
 
-  .question_type_3,  .question_type_1  {
+  .question_type_3,
+  .question_type_1 {
     margin: 7px 0;
   }
   .question_type_2 {
     margin: 40px 0;
   }
-  .question_type_4, .question_type_5 {
+  .question_type_4,
+  .question_type_5 {
     margin: 38px 0;
   }
-
 }
-
 
 // ЭКРАН 365 //
 @media (max-width: 365px) {
   span.el-alert__title {
     white-space: nowrap;
-    font-size: .9em;
+    font-size: 0.9em;
   }
 
   .button_question2 {
@@ -196,8 +185,7 @@ div.el-alert.el-alert--info.is-light.arrow {
 
   .question3_text {
     white-space: nowrap;
-    font-size: .85em !important;
+    font-size: 0.85em !important;
     margin-left: 10px;
   }
-
 }

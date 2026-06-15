@@ -1,75 +1,91 @@
 <script setup lang="ts">
-import { ref, onMounted, nextTick, watch } from 'vue'
-import { ElInput } from 'element-plus'
+import { ref, onMounted, nextTick, watch, computed } from "vue";
+import { ElInput } from "element-plus";
 
 interface QDataContent {
-  description?: string
-  correctAnswer: string[]
+  description?: string;
+  correctAnswer: string[];
 }
 
 interface QData {
-  id: number
-  description?: string
-  correctAnswer: string[]
-  content: QDataContent
-  id_question_type: number
-  userAnswer: string | null | undefined
+  id: number;
+  description?: string;
+  correctAnswer: string[];
+  content: QDataContent;
+  id_question_type: number;
+  userAnswer: string | null | undefined;
 }
 
 const props = defineProps<{
-  qData: QData
-}>()
+  qData: QData;
+}>();
 
 const emit = defineEmits<{
-  (e: 'update:userAnswer', value: string | null): void
-  (e: 'answer-submitted', value: boolean | null): void
-}>()
+  (e: "update:userAnswer", value: string | null): void;
+  (e: "answer-submitted", value: boolean | null): void;
+}>();
 
-const inputWidth = ref('200px')
-const hasUserInteracted = ref(false)
-const localUserAnswer = ref(props.qData.userAnswer)
+const inputWidth = ref("200px");
+const hasUserInteracted = ref(false);
+const localUserAnswer = ref(props.qData.userAnswer);
 
 const checkAnswer = (newVal: string | null | undefined, oldVal: string | null | undefined) => {
-  if (oldVal === undefined && newVal === null) return
+  if (oldVal === undefined && newVal === null) return;
 
-  hasUserInteracted.value = true
-  emit('update:userAnswer', newVal || null)
+  hasUserInteracted.value = true;
+  emit("update:userAnswer", newVal || null);
 
   if (newVal?.trim()) {
-    const userAnswer = newVal.toLowerCase().trim()
+    const userAnswer = newVal.toLowerCase().trim();
     const isCorrect = props.qData.content.correctAnswer.some(
-      ans => ans.toLowerCase().trim() === userAnswer
-    )
-    emit('answer-submitted', isCorrect)
+      (ans) => ans.toLowerCase().trim() === userAnswer,
+    );
+    emit("answer-submitted", isCorrect);
   } else {
-    emit('answer-submitted', null)
+    emit("answer-submitted", null);
   }
-}
+};
 
-watch(localUserAnswer, checkAnswer)
-watch(() => props.qData.userAnswer, (val) => {
-  localUserAnswer.value = val
-})
+watch(localUserAnswer, checkAnswer);
+watch(
+  () => props.qData.userAnswer,
+  (val) => {
+    localUserAnswer.value = val;
+  },
+);
 
 onMounted(() => {
   nextTick(() => {
-    const maxLength = Math.max(...props.qData.content.correctAnswer.map(a => a.length))
-    inputWidth.value = `${Math.min(300, Math.max(150, maxLength * 8))}px`
-  })
-})
+    const maxLength = Math.max(...props.qData.content.correctAnswer.map((a) => a.length));
+    inputWidth.value = `${Math.min(300, Math.max(150, maxLength * 8))}px`;
+  });
+});
+
+const splitDescription = computed(() => {
+  if (!props.qData?.content?.description) {
+    return ["_____"];
+  }
+
+  const parts = props.qData.content.description.split(/(_{5,})/);
+  if (parts.length === 1) {
+    return [...parts, "_____"];
+  }
+
+  return parts;
+});
 </script>
 
 <script lang="ts">
 export default {
-  name: 'QuestionType5Component'
-}
+  name: "QuestionType5Component",
+};
 </script>
 
 <template>
   <div class="question-container">
     <div class="question-text">
       <template v-if="qData.content.description">
-        <template v-for="(part, index) in qData.content.description.split(/(_{5,})/)" :key="index">
+        <template v-for="(part, index) in splitDescription" :key="index">
           <ElInput
             v-if="part.match(/_{5,}/)"
             v-model="localUserAnswer"
@@ -101,7 +117,6 @@ export default {
   word-break: break-word;
   line-height: 1.8;
   font-size: 20px;
-  color: white;
 }
 
 .inline-input {

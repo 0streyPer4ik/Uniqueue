@@ -1,34 +1,34 @@
 <script lang="ts">
-import { Options, Vue } from 'vue-class-component'
-import axios from 'axios'
+import { Options, Vue } from "vue-class-component";
+import axios from "axios";
 
 interface Subject {
-  id: number
-  name_subject: string
+  id: number;
+  name_subject: string;
 }
 
 interface Answer {
-  text: string
-  isCorrect: boolean
+  text: string;
+  isCorrect: boolean;
 }
 
 interface QDataContent {
-  description: string
-  answers: Answer[]
+  description: string;
+  answers: Answer[];
 }
 
 interface Question {
-  id: number
-  id_question_type: number
-  id_subject: number
-  content: QDataContent
+  id: number;
+  id_question_type: number;
+  id_subject: number;
+  content: QDataContent;
 }
 
 interface ApiQuestion {
-  id: number
-  id_question_type: number
-  id_subject: number
-  content: string
+  id: number;
+  id_question_type: number;
+  id_subject: number;
+  content: string;
 }
 
 @Options({
@@ -38,116 +38,120 @@ interface ApiQuestion {
       selectedQuestionType: null as string | null,
       subjects: [] as Subject[],
       selectedSubject: null as number | null,
-    }
+    };
   },
   computed: {
     questionTypes(): string[] {
       if (this.questions?.length) {
         const questionTypes = Array.from(
-          new Set(this.questions.map((q: Question) => q.id_question_type.toString()))
+          new Set(this.questions.map((q: Question) => q.id_question_type.toString())),
         ) as string[];
-        console.log('Question Types:', questionTypes);
+        console.log("Question Types:", questionTypes);
         return questionTypes;
       }
-      console.log('Question Types: (No questions loaded yet)');
+      console.log("Question Types: (No questions loaded yet)");
       return [];
     },
 
     filteredQuestions(): Question[] {
       if (!this.questions || this.questions.length === 0) {
-        console.log('Filtered Questions: (No questions loaded yet)')
-        return []
+        console.log("Filtered Questions: (No questions loaded yet)");
+        return [];
       }
 
-      let filtered = [...this.questions]
+      let filtered = [...this.questions];
 
-      console.log('Selected Question Type:', this.selectedQuestionType, typeof this.selectedQuestionType)
-      console.log('Selected Subject:', this.selectedSubject, typeof this.selectedSubject)
+      console.log(
+        "Selected Question Type:",
+        this.selectedQuestionType,
+        typeof this.selectedQuestionType,
+      );
+      console.log("Selected Subject:", this.selectedSubject, typeof this.selectedSubject);
 
       if (this.selectedQuestionType) {
-        filtered = filtered.filter(q => {
-          console.log('Question id_question_type:', q.id_question_type, typeof q.id_question_type)
-          return q.id_question_type === Number(this.selectedQuestionType)
-        })
+        filtered = filtered.filter((q) => {
+          console.log("Question id_question_type:", q.id_question_type, typeof q.id_question_type);
+          return q.id_question_type === Number(this.selectedQuestionType);
+        });
       }
 
       if (this.selectedSubject) {
-        filtered = filtered.filter(q => q.id_subject === this.selectedSubject)
+        filtered = filtered.filter((q) => q.id_subject === this.selectedSubject);
       }
 
-      console.log('Filtered Questions:', filtered)
-      return filtered
+      console.log("Filtered Questions:", filtered);
+      return filtered;
     },
   },
   mounted() {
-    this.fetchQuestions()
-    this.fetchSubjects()
+    this.fetchQuestions();
+    this.fetchSubjects();
   },
   methods: {
     async fetchQuestions() {
       try {
-        const response = await axios.get<ApiQuestion[]>('/questions')
-        this.questions = response.data.map(item => ({
+        const response = await axios.get<ApiQuestion[]>("/questions?pagination=false");
+        this.questions = response.data.map((item) => ({
           id: item.id,
           id_question_type: item.id_question_type,
           id_subject: item.id_subject,
-          content: JSON.parse(item.content) as QDataContent
-        }))
-        console.log('Fetched Questions:', this.questions)
+          content: JSON.parse(item.content) as QDataContent,
+        }));
+        console.log("Fetched Questions:", this.questions);
       } catch (error) {
-        console.error('Ошибка при загрузке вопросов:', error)
+        console.error("Ошибка при загрузке вопросов:", error);
       }
     },
     async fetchSubjects() {
       try {
-        const response = await axios.get<Subject[]>('/subjects')
-        this.subjects = response.data
-        console.log('Fetched Subjects:', this.subjects)
+        const response = await axios.get<Subject[]>("/subjects?pagination=false&filter[enabled]=1");
+        this.subjects = response.data;
+        console.log("Fetched Subjects:", this.subjects);
       } catch (error) {
-        console.error('Ошибка при загрузке предметов:', error)
+        console.error("Ошибка при загрузке предметов:", error);
       }
     },
     filterQuestions() {
-      console.log('filterQuestions() called')
-    }
+      console.log("filterQuestions() called");
+    },
   },
 })
 export default class QuestionListComponent extends Vue {
-  questions!: Question[]
-  selectedQuestionType: string | null = null
-  subjects!: Subject[]
-  selectedSubject: number | null = null
+  questions!: Question[];
+  selectedQuestionType: string | null = null;
+  subjects!: Subject[];
+  selectedSubject: number | null = null;
 
-  questionTypes!: string[]
-  filteredQuestions!: Question[]
+  questionTypes!: string[];
+  filteredQuestions!: Question[];
 
   async fetchQuestions() {
     try {
-      const response = await axios.get<ApiQuestion[]>('/questions')
-      this.questions = response.data.map(item => ({
+      const response = await axios.get<ApiQuestion[]>("/questions?pagination=false");
+      this.questions = response.data.map((item) => ({
         id: item.id,
         id_question_type: item.id_question_type,
         id_subject: item.id_subject,
-        content: JSON.parse(item.content) as QDataContent
-      }))
-      console.log('Fetched Questions:', this.questions)
+        content: JSON.parse(item.content) as QDataContent,
+      }));
+      console.log("Fetched Questions:", this.questions);
     } catch (error) {
-      console.error('Ошибка при загрузке вопросов:', error)
+      console.error("Ошибка при загрузке вопросов:", error);
     }
   }
 
   async fetchSubjects() {
     try {
-      const response = await axios.get<Subject[]>('/subjects')
-      this.subjects = response.data
-      console.log('Fetched Subjects:', this.subjects)
+      const response = await axios.get<Subject[]>("/subjects?pagination=false&filter[enabled]=1");
+      this.subjects = response.data;
+      console.log("Fetched Subjects:", this.subjects);
     } catch (error) {
-      console.error('Ошибка при загрузке предметов:', error)
+      console.error("Ошибка при загрузке предметов:", error);
     }
   }
 
   filterQuestions() {
-    console.log('filterQuestions() called')
+    console.log("filterQuestions() called");
   }
 }
 </script>
@@ -164,7 +168,9 @@ export default class QuestionListComponent extends Vue {
       <el-option v-for="type in questionTypes" :key="type" :label="type" :value="type" />
     </el-select>
 
-    <div v-if="filteredQuestions.length > 0 && selectedQuestionType !== null && selectedSubject !== null">
+    <div v-if="
+      filteredQuestions.length > 0 && selectedQuestionType !== null && selectedSubject !== null
+    ">
       <h2>Вопросы:</h2>
       <ul>
         <li v-for="question in filteredQuestions" :key="question.id">
