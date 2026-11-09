@@ -3,6 +3,7 @@ import { Options, Vue } from "vue-class-component"
 import axios from "axios"
 import { ElMessage } from "element-plus"
 import type { MessageParams } from "element-plus"
+import { ProfileStore } from "@/stores";
 
 interface QDataContent {
   description: string

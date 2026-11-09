@@ -7,22 +7,22 @@
         <form @submit.prevent="handleLogin" class="enter-form">
           <div class="form-group">
             <label for="studentId" class="form-label">ID студента</label>
-            <input id="studentId" v-model="studentId" type="text" class="form-input" placeholder="Введите ваш ID" required />
+            <input id="studentId" v-model="studentId" type="text" class="form-input" placeholder="Введите ваш ID" required autocomplete="off" />
           </div>
 
           <div class="form-group">
             <label for="password" class="form-label">Пароль</label>
-            <input id="password" v-model="password" type="password" class="form-input" placeholder="Введите пароль" required />
+            <input id="password" v-model="password" type="password" class="form-input" placeholder="Введите пароль" required autocomplete="off" />
           </div>
+
+          <!-- <div class="remember-me">
+            <el-checkbox v-model="rememberMe">Запомнить меня на этом ПК</el-checkbox>
+          </div> -->
 
           <button type="submit" class="enter-btn" :disabled="isLoading">
             {{ isLoading ? "Вход..." : "Войти" }}
           </button>
         </form>
-
-        <div v-if="error" class="error-message">
-          {{ error }}
-        </div>
       </div>
     </div>
   </div>
@@ -30,52 +30,35 @@
 
 <script lang="ts">
 import { Vue } from "vue-class-component";
-import axios from "axios";
 import { ElMessage } from "element-plus";
 import type { MessageParams } from "element-plus";
+import { ProfileStore } from "@/stores";
+
 
 class StudentEnter extends Vue {
-  studentId = "";
-  password = "";
-  isLoading = false;
-  error = "";
+  studentId = ""
+  password = ""
+  isLoading = false
+  rememberMe = false
+
+  profileStore = ProfileStore()
 
   async handleLogin(): Promise<void> {
     this.isLoading = true;
-    this.error = "";
-
-    const loginData = {
-      studentId: this.studentId,
-      password: this.password,
-    };
-    axios
-      .post("/login", loginData)
-      .then((response) => {
-        if (response.data.success) {
-          ElMessage({
-            message: "Успешно вошли",
-            type: "success",
-          } as MessageParams);
-          localStorage.setItem("authToken", response.data.token)
-          localStorage.setItem("user", JSON.stringify(response.data.user))
-          // this.$router.push("/")
-          window.location.replace('/')
-        } else {
-          ElMessage({
-            message: response.data.message,
-            type: "error",
-          } as MessageParams);
-        }
-        this.isLoading = false;
-      })
-      .catch((error) => {
-        console.error("Ошибка!", error);
-        ElMessage({
-          message: "Ошибка входа!",
-          type: "error",
-        } as MessageParams);
-        this.isLoading = false;
-      });
+    const loginResult = await this.profileStore.login(this.studentId, this.password)
+    if (loginResult === "ok") {
+      ElMessage({
+        message: "Успешно вошли",
+        type: "success",
+      } as MessageParams)
+      window.location.replace('/')
+    } else {
+      ElMessage({
+        message: loginResult,
+        type: "error",
+      } as MessageParams)
+    }
+    this.isLoading = false
   }
 }
 
@@ -158,14 +141,5 @@ export default StudentEnter;
 
 .enter-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-}
-
-.error-message {
-  margin-top: 1rem;
-  padding: 0.75rem;
-  background: #fee2e2;
-  color: #dc2626;
-  border-radius: 6px;
-  text-align: center;
 }
 </style>

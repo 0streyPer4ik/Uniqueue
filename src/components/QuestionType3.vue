@@ -27,6 +27,10 @@ interface QData {
       type: Object as () => QData,
       required: true,
     },
+    showResults: {
+      type: Boolean,
+      required: true,
+    },
   },
   components: {
     ArrowUp,
@@ -43,9 +47,10 @@ interface QData {
 
 class QuestionType3Component extends Vue {
   qData!: QData
+  showResults!: boolean
   isAnimating = false
-  movingItems: {index: number, direction: number, state: 'animating' | 'complete'}[] = []
-  shuffledAnswers: {text: string, originalIndex: number}[] = []
+  movingItems: { index: number, direction: number, state: 'animating' | 'complete' }[] = []
+  shuffledAnswers: { text: string, originalIndex: number }[] = []
   hasUserInteracted = false
 
   created() {
@@ -120,8 +125,8 @@ class QuestionType3Component extends Vue {
 
     this.isAnimating = true
     this.movingItems = [
-      {index, direction: direction, state: 'animating'},
-      {index: newIndex, direction: -direction, state: 'animating'}
+      { index, direction: direction, state: 'animating' },
+      { index: newIndex, direction: -direction, state: 'animating' }
     ]
 
     setTimeout(() => {
@@ -133,8 +138,8 @@ class QuestionType3Component extends Vue {
       this.shuffledAnswers = newAnswers
 
       this.movingItems = [
-        {index, direction: direction, state: 'complete'},
-        {index: newIndex, direction: -direction, state: 'complete'}
+        { index, direction: direction, state: 'complete' },
+        { index: newIndex, direction: -direction, state: 'complete' }
       ]
 
       setTimeout(() => {
@@ -165,54 +170,34 @@ export default QuestionType3Component
 <template>
   <div>
     <div class="description" v-if="qData.content.description">
-      {{ qData.content.description }}
+      <pre>{{ qData.content.description }}</pre>
     </div>
     <el-row v-if="shuffledAnswers.length > 0">
       <el-col :lg="24">
         <div class="answers-container">
-          <div
-            class="answer-item"
-            v-for="(answer, index) in shuffledAnswers"
-            :key="index"
-            :class="{
-              'move-up': movingItems.some(item => item.index === index && item.direction === -1),
-              'move-down': movingItems.some(item => item.index === index && item.direction === 1),
-              'move-complete': movingItems.some(item => item.index === index && item.state === 'complete')
-            }"
-          >
-            <el-alert
-              type="info"
-              :title="answer.text"
-              :closable="false"
-              class="alert-content"
-            />
+          <div class="answer-item" v-for="(answer, index) in shuffledAnswers" :key="index" :class="{
+            'move-up': movingItems.some(item => item.index === index && item.direction === -1),
+            'move-down': movingItems.some(item => item.index === index && item.direction === 1),
+            'move-complete': movingItems.some(item => item.index === index && item.state === 'complete')
+          }">
+            <el-alert type="info" :title="answer.text" :closable="false" class="alert-content" />
             <div class="answer-buttons">
-              <el-button
-                type="primary"
-                size="small"
-                @click="moveItem(index, -1)"
-                :disabled="index === 0 || isAnimating"
-                circle
-                class="el-button_class"
-              >
-                <el-icon><ArrowUp /></el-icon>
+              <el-button type="primary" size="small" @click="moveItem(index, -1)" :disabled="index === 0 || isAnimating || showResults" circle class="el-button_class">
+                <el-icon>
+                  <ArrowUp />
+                </el-icon>
               </el-button>
-              <el-button
-                type="primary"
-                size="small"
-                @click="moveItem(index, 1)"
-                :disabled="index === shuffledAnswers.length - 1 || isAnimating"
-                circle
-                class="el-button_class"
-              >
-                <el-icon><ArrowDown /></el-icon>
+              <el-button type="primary" size="small" @click="moveItem(index, 1)" :disabled="index === shuffledAnswers.length - 1 || isAnimating || showResults" circle class="el-button_class">
+                <el-icon>
+                  <ArrowDown />
+                </el-icon>
               </el-button>
             </div>
           </div>
         </div>
       </el-col>
     </el-row>
-      <el-alert v-else type="error" title="No answers available" :closable="false" />
+    <el-alert v-else type="error" title="No answers available" :closable="false" />
   </div>
   <br>
 </template>
@@ -280,7 +265,7 @@ export default QuestionType3Component
   }
 
   .answers-container {
-      margin: 10px 0 0 0;
+    margin: 10px 0 0 0;
   }
 
   .answer-item {

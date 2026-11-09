@@ -22,16 +22,20 @@ export default defineConfig({
     },
   },
   esbuild: {
-     tsconfigRaw: {
+    tsconfigRaw: {
       compilerOptions: {
         experimentalDecorators: true
       }
     }
   },
-    build: {
+  build: {
     minify: false,
-    sourcemap: "inline",
+    sourcemap: false,
   },
+  // build: {
+  //   minify: false,
+  //   sourcemap: "inline",
+  // },
   server: {
     host: 'test.local',
     port: 5173,

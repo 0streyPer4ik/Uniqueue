@@ -87,26 +87,26 @@ export default QuestionComponent;
     <div v-else-if="qData.id_question_type == 2" class="question_type_2">
       <span class="text">Вопрос № {{ index + 1 }}</span>
       <span class="text_question">Соотнесите термин и его определение</span>
-      <QuestionType2Component :qData="qData" @answer-submitted="handleAnswer" />
+      <QuestionType2Component :qData="qData" :showResults="showResults" @answer-submitted="handleAnswer" />
     </div>
 
     <div v-else-if="qData.id_question_type == 3" class="question_type_3">
       <span class="text">Вопрос № {{ index + 1 }}</span>
       <span class="text_question question3_text">Расположите в правильной последовательности</span>
-      <question-type-3-component :qData="qData" @answer-submitted="handleAnswer" />
+      <question-type-3-component :qData="qData" :showResults="showResults" @answer-submitted="handleAnswer" />
     </div>
 
     <div v-else-if="qData.id_question_type == 4" class="question_type_4">
       <span class="text">Вопрос № {{ index + 1 }}</span>
       <span class="text_question">Напишите правильный вариант ответа</span>
-      <QuestionType4Component :qData="qData" @answer-submitted="handleAnswer" />
+      <QuestionType4Component :qData="qData" :showResults="showResults" @answer-submitted="handleAnswer" />
     </div>
 
     <div v-else-if="qData.id_question_type == 5" class="question_type_5">
       <div class="qustion5">
         <span class="text">Вопрос № {{ index + 1 }}</span>
         <span class="text_question">Напишите правильный вариант ответа</span>
-        <QuestionType5Component :qData="qData" @answer-submitted="handleAnswer" />
+        <QuestionType5Component :qData="qData" :showResults="showResults" @answer-submitted="handleAnswer" />
       </div>
     </div>
   </div>

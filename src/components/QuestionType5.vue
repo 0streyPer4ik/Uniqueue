@@ -18,6 +18,7 @@ interface QData {
 
 const props = defineProps<{
   qData: QData;
+  showResults: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -86,15 +87,7 @@ export default {
     <div class="question-text">
       <template v-if="qData.content.description">
         <template v-for="(part, index) in splitDescription" :key="index">
-          <ElInput
-            v-if="part.match(/_{5,}/)"
-            v-model="localUserAnswer"
-            :style="{ width: inputWidth }"
-            placeholder="Введите ответ"
-            clearable
-            class="inline-input"
-            @input="hasUserInteracted = true"
-          />
+          <ElInput v-if="part.match(/_{5,}/)" v-model="localUserAnswer" :style="{ width: inputWidth }" placeholder="Введите ответ" clearable class="inline-input" @input="hasUserInteracted = true" :disabled="showResults" />
           <span v-else>{{ part }}</span>
         </template>
       </template>

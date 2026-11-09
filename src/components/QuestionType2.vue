@@ -34,6 +34,10 @@ interface MatchingData {
         correctAnswers: [] as number[]
       }),
     },
+    showResults: {
+      type: Boolean,
+      required: true,
+    },
   },
   components: {
     ArrowUp,
@@ -55,6 +59,7 @@ interface MatchingData {
 
 export default class QuestionType2Component extends Vue {
   qData!: MatchingData
+  showResults!: boolean
   isAnimating = false
   movingIndices: Set<number> = new Set()
   shuffledData: MatchingData | null = null
@@ -62,7 +67,7 @@ export default class QuestionType2Component extends Vue {
   shuffledAnswersOrder: number[] = []
   hasUserInteracted = false
 
-  animationStyle: {[key: number]: {transform: string, transition: string, zIndex: number}} = {}
+  animationStyle: { [key: number]: { transform: string, transition: string, zIndex: number } } = {}
 
   itemHeights: number[] = []
 
@@ -227,7 +232,7 @@ export default class QuestionType2Component extends Vue {
         const newAnswersOrder = this.shuffledData ? [...this.shuffledAnswersOrder] : [...Array(newAnswers.length).keys()]
 
         if (index >= 0 && index < newAnswers.length &&
-            newIndex >= 0 && newIndex < newAnswers.length) {
+          newIndex >= 0 && newIndex < newAnswers.length) {
           [newAnswers[index], newAnswers[newIndex]] = [
             newAnswers[newIndex],
             newAnswers[index],
@@ -332,15 +337,10 @@ export default class QuestionType2Component extends Vue {
 
     <div class="matching-container">
       <div class="definitions-column">
-        <div
-          class="definition-item-wrapper"
-          v-for="(description, index) in getDisplayData()?.content?.qDescription || []"
-          :key="'def-' + index"
-          :style="{
-            height: itemHeights[index] ? `${itemHeights[index]}px` : 'auto',
-            marginBottom: index < ((getDisplayData()?.content?.qDescription?.length || 0) - 1) ? '16px' : '0'
-          }"
-        >
+        <div class="definition-item-wrapper" v-for="(description, index) in getDisplayData()?.content?.qDescription || []" :key="'def-' + index" :style="{
+          height: itemHeights[index] ? `${itemHeights[index]}px` : 'auto',
+          marginBottom: index < ((getDisplayData()?.content?.qDescription?.length || 0) - 1) ? '16px' : '0'
+        }">
           <div class="definition-item">
             <div class="definition-content">
               <div class="item-text">{{ description }}</div>
@@ -350,43 +350,25 @@ export default class QuestionType2Component extends Vue {
       </div>
 
       <div class="terms-column">
-        <div
-          class="term-item-wrapper"
-          v-for="(answer, index) in getDisplayData()?.content?.answersType2 || []"
-          :key="'term-' + index"
-          :style="{
-            height: itemHeights[index] ? `${itemHeights[index]}px` : 'auto',
-            marginBottom: index < ((getDisplayData()?.content?.answersType2?.length || 0) - 1) ? '16px' : '0'
-          }"
-        >
-          <div
-            class="term-item"
-            :style="getTermItemStyle(index)"
-          >
+        <div class="term-item-wrapper" v-for="(answer, index) in getDisplayData()?.content?.answersType2 || []" :key="'term-' + index" :style="{
+          height: itemHeights[index] ? `${itemHeights[index]}px` : 'auto',
+          marginBottom: index < ((getDisplayData()?.content?.answersType2?.length || 0) - 1) ? '16px' : '0'
+        }">
+          <div class="term-item" :style="getTermItemStyle(index)">
             <div class="term-content">
               <div class="item-text">{{ answer?.text }}</div>
             </div>
 
             <div class="term-buttons">
-              <el-button
-                type="primary"
-                size="small"
-                @click="moveItem(index, -1)"
-                :disabled="index === 0 || isAnimating"
-                circle
-                class="move-button"
-              >
-                <el-icon><ArrowUp /></el-icon>
+              <el-button type="primary" size="small" @click="moveItem(index, -1)" :disabled="index === 0 || isAnimating || showResults" circle class="move-button">
+                <el-icon>
+                  <ArrowUp />
+                </el-icon>
               </el-button>
-              <el-button
-                type="primary"
-                size="small"
-                @click="moveItem(index, 1)"
-                :disabled="shouldDisableDownButton(index)"
-                circle
-                class="move-button"
-              >
-                <el-icon><ArrowDown /></el-icon>
+              <el-button type="primary" size="small" @click="moveItem(index, 1)" :disabled="shouldDisableDownButton(index) || showResults" circle class="move-button">
+                <el-icon>
+                  <ArrowDown />
+                </el-icon>
               </el-button>
             </div>
           </div>
@@ -675,6 +657,7 @@ export default class QuestionType2Component extends Vue {
 }
 
 @media (max-width: 360px) {
+
   .definition-item,
   .term-item {
     padding: 6px;

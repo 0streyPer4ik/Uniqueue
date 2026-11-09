@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router"
 import HomeView from "./views/HomeView.vue"
+import ProfileView from "./views/ProfileView.vue"
 import SubjectView from "./views/SubjectView.vue"
 import EducationLevelView from "./views/EducationLevelView.vue"
 import AnalyticGroupView from "./views/AnalyticGroupView.vue"
@@ -9,10 +10,7 @@ import CreateQuestion from "./components/forms/CreateQuestion.vue"
 import StudentEnter from "./views/StudentEnter.vue"
 import Dashboard from "./components/forms/Dashboard.vue"
 import NotFound from "./views/NotFound.vue"
-
-/////////////////////////////////////////
-// ПУТЬ И ОТОБРАЖЕНИЕ ГЛАВНОЙ СТРАНИЦЫ //
-/////////////////////////////////////////
+import { ProfileStore } from "@/stores"
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -22,6 +20,12 @@ const router = createRouter({
       name: "home",
       component: HomeView,
       meta: { title: "АКИТ тестирование", requiresAuth: false },
+    },
+    {
+      path: "/profile",
+      name: "profile",
+      component: ProfileView,
+      meta: { title: "АКИТ тестирование", requiresAuth: true },
     },
     {
       path: "/education-level/:id",
@@ -45,19 +49,19 @@ const router = createRouter({
       path: "/edit/:id",
       name: "edit",
       component: EditQuestion,
-      meta: { title: "Редактирование вопроса", requiresAuth: true },
+      meta: { title: "Редактирование вопроса", requiresAuth: true, requiresAdmin: true },
     },
     {
       path: "/list",
       name: "list",
       component: AllQuestionsList,
-      meta: { title: "Все вопросы", requiresAuth: true },
+      meta: { title: "Все вопросы", requiresAuth: true, requiresAdmin: true },
     },
     {
       path: "/new",
       name: "new",
       component: CreateQuestion,
-      meta: { title: "Новый вопрос", requiresAuth: true },
+      meta: { title: "Новый вопрос", requiresAuth: true, requiresAdmin: true },
     },
     {
       path: "/enter",
@@ -69,7 +73,7 @@ const router = createRouter({
       path: "/dashboard",
       name: "dashboard",
       component: Dashboard,
-      meta: { title: "Dashboard", requiresAuth: true },
+      meta: { title: "Dashboard", requiresAuth: true, requiresAdmin: true },
     },
     {
       path: "/:pathMatch(.*)*",
@@ -81,14 +85,22 @@ const router = createRouter({
 })
 
 router.beforeEach((to, from, next) => {
-  const isAuthenticated = localStorage.getItem("authToken")
+  const profileStore = ProfileStore()
   const requiresAuth = to.meta.requiresAuth
+  const requiresAdmin = to.meta.requiresAdmin
 
-  if (requiresAuth && !isAuthenticated) {
-    next({ name: "enter" })
-  } else {
-    next()
+  if (requiresAdmin) {
+    if (profileStore.hasRoleAdmin) {
+      next()
+    } else {
+      next({ name: "home" })
+    }
   }
+
+  if (requiresAuth && !profileStore.isLoggedIn) {
+    next({ name: "enter" })
+  }
+  next()
 })
 
 router.afterEach((to) => {

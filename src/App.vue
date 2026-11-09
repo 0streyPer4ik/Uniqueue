@@ -1,11 +1,21 @@
 <script setup lang="ts">
 import { RouterView } from "vue-router"
-import { QuestionStore, SubjectsStore, TeachersStore, GroupsStore } from "./stores/counter"
-import { onMounted } from "vue"
+import { QuestionStore, SubjectsStore, TeachersStore, GroupsStore, ProfileStore } from "@/stores"
+
+import { onMounted, onUnmounted } from "vue"
 import axios from 'axios'
 import type { AxiosResponse } from 'axios'
 import type { Question, SubjectInterface, TeacherInterface, GroupInterface } from "@/interfaces/QuestionInterface"
 import LogInOutButton from "@/components/LogInOutButton.vue"
+
+const handleStorageChange = () => {
+  const profileStore = ProfileStore()
+  profileStore.checkIsLoggedInState()
+}
+
+onUnmounted(() => {
+  window.removeEventListener('storage', handleStorageChange)
+})
 
 onMounted(() => {
   const qListStore = QuestionStore();
@@ -13,6 +23,7 @@ onMounted(() => {
   const teacherStore = TeachersStore();
   const groupStore = GroupsStore();
 
+  window.addEventListener('storage', handleStorageChange)
 
   const urlGroups = '/academic-groups?pagination=false'
   axios.get<GroupInterface[]>(urlGroups)

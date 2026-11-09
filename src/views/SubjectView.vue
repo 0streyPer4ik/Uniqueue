@@ -1,6 +1,6 @@
 <script lang="ts">
 import { Options, Vue } from "vue-class-component"
-import { QuestionStore, SubjectsStore } from "../stores/counter"
+import { QuestionStore, SubjectsStore } from "../stores"
 import TestingComponent from "../components/Testing.vue"
 
 @Options({

@@ -1,98 +1,66 @@
 <template>
-  <el-tag id="auth-name" v-if="isLoggedIn" :type="getTagType" size="large" effect="dark">{{ fio }}</el-tag>
-  <button v-if="isLoggedIn" @click="removeAuthToken" class="auth-btn logout-btn">Выйти</button>
-  <button v-else @click="goToLogin" class="auth-btn login-btn">Войти</button>
+  <el-button-group id="menu-btns" size="large">
+    <el-button v-if="profileStore.isLoggedIn" @click="showProfile" :type="getTagType">
+      <el-icon>
+        <User />
+      </el-icon>
+      {{ profileStore.fio }}
+    </el-button>
+    <el-button v-if="profileStore.hasRoleAdmin" @click="showStatistics" type="warning">
+      <el-icon>
+        <TrendCharts />
+      </el-icon>
+    </el-button>
+    <el-button v-if="profileStore.isLoggedIn" @click="logout" type="primary">Выйти</el-button>
+    <el-button v-else @click="goToLogin" type="success">Войти</el-button>
+  </el-button-group>
 </template>
 
-<script lang="ts">
-import { Options, Vue } from "vue-class-component"
-import { ElMessage } from "element-plus"
-import type { MessageParams } from "element-plus"
+<script setup lang="ts">
+import { ElMessage } from 'element-plus'
+import type { MessageParams } from 'element-plus'
+import { useRouter } from 'vue-router'
+import { ProfileStore } from '@/stores'
+import { computed } from 'vue'
 
-@Options({})
-export default class AuthButtons extends Vue {
-  private isLoggedInState: boolean = !!localStorage.getItem("authToken")
+const profileStore = ProfileStore()
 
-  get isLoggedIn(): boolean {
-    return this.isLoggedInState;
+const getTagType = computed(() => {
+  if (profileStore.hasRoleAdmin) {
+    return 'danger'
   }
+  return 'info'
+})
 
-  get fio(): string {
-    const userData = localStorage.getItem("user")
-    if (!userData) {
-      return ""
-    }
+const router = useRouter()
 
-    let user
-    try {
-      user = JSON.parse(userData)
-    } catch (error) {
-      console.error("Ошибка парсинга данных:", error)
-      return ""
-    }
-    return user.username
-  }
+const goToLogin = () => {
+  router.push('/enter')
+}
 
-  get getTagType(): string {
-    const userData = localStorage.getItem("user")
-    if (!userData) {
-      return "info"
-    }
+const showProfile = () => {
+  router.push('/profile')
+}
 
-    let user
-    try {
-      user = JSON.parse(userData)
-    } catch (error) {
-      console.error("Ошибка парсинга данных:", error)
-      return "info"
-    }
-    if (user.role == "admin")
-      return 'danger'
-    return "info"
-  }
+const showStatistics = () => {
+  router.push({
+    name: 'analytic-group',
+    params: { id: 4 }
+  })
+}
 
-  mounted() {
-    window.addEventListener("storage", this.handleStorageChange)
-  }
-
-  beforeUnmount() {
-    window.removeEventListener("storage", this.handleStorageChange)
-  }
-
-  handleStorageChange() {
-    this.isLoggedInState = !!localStorage.getItem("authToken")
-  }
-
-  goToLogin(): void {
-    this.$router.push("/enter")
-  }
-
-  removeAuthToken(): void {
-    localStorage.removeItem("authToken")
-    localStorage.removeItem("user")
-
-    this.isLoggedInState = false
-    ElMessage({
-      message: "Выход выполнен!",
-      type: "success",
-    } as MessageParams)
-    this.$router.push("/")
-  }
+const logout = () => {
+  profileStore.logout()
+  ElMessage({
+    message: 'Выход выполнен!',
+    type: 'success',
+  } as MessageParams)
+  router.push('/')
 }
 </script>
 
 <style scoped>
-#auth-name {
-  position: fixed;
-  top: 20px;
-  right: 100px;
-  z-index: 1000;
-  padding: 8px 16px;
-  font-size: 14px;
-  user-select: none;
-}
-
-.auth-btn {
+#menu-btns {
   position: fixed;
   top: 20px;
   right: 20px;
@@ -102,23 +70,5 @@ export default class AuthButtons extends Vue {
   border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
-}
-
-.login-btn {
-  background: #4caf50;
-  color: white;
-}
-
-.login-btn:hover {
-  background: #388e3c;
-}
-
-.logout-btn {
-  background: #ff4444;
-  color: white;
-}
-
-.logout-btn:hover {
-  background: #cc0000;
 }
 </style>

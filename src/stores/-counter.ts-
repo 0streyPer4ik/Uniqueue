@@ -1,0 +1,28 @@
+import { ref, computed, defineComponent } from 'vue'
+import { defineStore, mapStores, mapState, mapActions } from 'pinia'
+
+
+export const useCounterStore = defineStore('counter', () => {
+  const count = ref(0)
+  const doubleCount = computed(() => count.value * 2)
+  function increment() {
+    count.value++
+  }
+
+  return { count, doubleCount, increment }
+})
+
+
+
+
+export default defineComponent({
+  computed: {
+    ...mapStores(useCounterStore, QuestionStore, TeachersStore, ProfileStore),
+    ...mapState(useCounterStore, ['count']),
+    ...mapState(QuestionStore, ['list']),
+    ...mapState(TeachersStore, ['list']),
+  },
+  methods: {
+    ...mapActions(useCounterStore, ['increment']),
+  },
+})

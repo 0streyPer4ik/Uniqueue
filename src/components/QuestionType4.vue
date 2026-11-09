@@ -23,6 +23,10 @@ interface QData {
       type: Object as () => QData,
       required: true,
     },
+    showResults: {
+      type: Boolean,
+      required: true,
+    },
   },
   components: {
     ElInput,
@@ -36,9 +40,10 @@ interface QData {
   },
 })
 class QuestionType4Component extends Vue {
-  qData!: QData;
-  inputWidth = "200px";
-  hasUserInteracted = false;
+  qData!: QData
+  showResults!: boolean
+  inputWidth = "200px"
+  hasUserInteracted = false
 
   mounted() {
     this.$nextTick(() => {
@@ -98,16 +103,10 @@ export default QuestionType4Component;
     <div class="question-text">
       <template v-if="qData.content.description">
         <template v-for="(part, index) in splitDescription" :key="index">
-          <ElInput
-            v-if="part.match(/_{5,}/)"
-            v-model="qData.userAnswer"
-            :style="{ width: inputWidth }"
-            placeholder="Введите ответ"
-            clearable
-            class="inline-input"
-            @input="hasUserInteracted = true"
-          />
-          <span v-else>{{ part }}</span>
+          <ElInput v-if="part.match(/_{5,}/)" v-model="qData.userAnswer" :style="{ width: inputWidth }" placeholder="Введите ответ" clearable class="inline-input" @input="hasUserInteracted = true" :disabled="showResults" />
+          <span v-else>
+            <pre>{{ part }}</pre>
+          </span>
         </template>
       </template>
       <span v-else>Описание вопроса отсутствует</span>

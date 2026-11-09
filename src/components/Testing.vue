@@ -5,6 +5,7 @@ import type { QuestionData } from "../interfaces/QuestionInterface.ts"
 import axios from "axios"
 import { ElMessage } from "element-plus"
 import type { MessageParams } from "element-plus"
+import { ProfileStore } from "@/stores";
 
 @Options({
   props: {
@@ -30,6 +31,8 @@ class TestingComponent extends Vue {
   questions!: QuestionData[]
   answers: Record<number, boolean | null> = {}
   showResults = false
+  showQuestionDescriptionOnSide = false
+
 
   handleAnswerSubmitted(payload: {
     questionId: number;
@@ -54,23 +57,13 @@ class TestingComponent extends Vue {
 
   showFinalResults() {
     this.stopTimer()
-    this.showResults = true;
+    this.showResults = true
 
-
-
-    const userData = localStorage.getItem("user")
-    if (!userData) {
+    const profileStore = ProfileStore()
+    const user = profileStore.getUser
+    if (!user) {
       return
     }
-
-    let user
-    try {
-      user = JSON.parse(userData)
-    } catch (error) {
-      console.error("Ошибка парсинга данных:", error)
-      return
-    }
-
 
     const startDate = new Date();
     startDate.setSeconds(startDate.getSeconds() - (this.totalTime - this.remainingTime))
@@ -281,15 +274,15 @@ export default TestingComponent;
         </div>
       </div>
 
-      <h3>Вопросы</h3>
+      <h3>Вопросы <el-switch v-model="showQuestionDescriptionOnSide" width="180" inline-prompt active-text="поазывать описание" inactive-text="скрывать описание" /></h3>
       <div class="questions-sidebar-scroll">
         <div v-for="(qData, index) in questions" :key="`sidebar-${qData.id}`" class="sidebar-question" :class="getQuestionStatus(index)" @click="scrollToQuestion(index)" :title="getQuestionStatusText(index)">
           <span class="question-number">Вопрос {{ index + 1 }}
             <span class="question-status-badge">{{ getQuestionStatusText(index) }}</span>
           </span>
-          <span class="question-preview">
+          <span class="question-preview" v-if="showQuestionDescriptionOnSide">
             {{
-              qData.content.description ||
+              qData.content.description?.replace(/_{5,}/g, '_____') ||
               (qData.content.qDescription ? qData.content.qDescription[0] : "Нет описания")
             }}
           </span>
@@ -376,7 +369,7 @@ export default TestingComponent;
 }
 
 .sidebar-question {
-  padding: 10px;
+  padding: 1px 5px;
   margin: 8px 0;
   border-radius: 6px;
   cursor: pointer;
@@ -385,6 +378,7 @@ export default TestingComponent;
   display: flex;
   flex-direction: column;
   border: 1px solid transparent;
+  position: relative;
 }
 
 .sidebar-question:hover {
@@ -421,16 +415,16 @@ export default TestingComponent;
 .question-number {
   font-weight: bold;
   display: block;
-  margin-bottom: 5px;
-  font-size: 15px;
+  font-size: 14px;
 }
 
 .question-status-badge {
   font-size: 12px;
-  padding: 2px 6px;
-  border-radius: 10px;
-  margin-bottom: 5px;
-  align-self: flex-end;
+  padding: 1px 6px;
+  border-radius: 5px;
+  position: absolute;
+  right: 1px;
+  top: 0px;
 }
 
 .sidebar-question.correct .question-status-badge {
@@ -460,6 +454,7 @@ export default TestingComponent;
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 1.4;
+  margin-top: 5px;
 }
 
 .submit-btn {
