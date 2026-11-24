@@ -5,7 +5,7 @@ import type { QuestionData } from "../interfaces/QuestionInterface.ts"
 import axios from "axios"
 import { ElMessage } from "element-plus"
 import type { MessageParams } from "element-plus"
-import { ProfileStore } from "@/stores";
+import { ProfileStore, SubjectsStore } from "@/stores";
 
 @Options({
   props: {
@@ -13,6 +13,10 @@ import { ProfileStore } from "@/stores";
       type: Array as () => QuestionData[],
       required: true,
     },
+    id_subjects: {
+      type: Array as () => number[],
+      required: true,
+    }
   },
   components: {
     QuestionComponent,
@@ -29,10 +33,12 @@ import { ProfileStore } from "@/stores";
 })
 class TestingComponent extends Vue {
   questions!: QuestionData[]
+  id_subjects!: number[]
   answers: Record<number, boolean | null> = {}
   showResults = false
   showQuestionDescriptionOnSide = false
 
+  subjectsStore = SubjectsStore()
 
   handleAnswerSubmitted(payload: {
     questionId: number;
@@ -72,7 +78,8 @@ class TestingComponent extends Vue {
       id_student: user.id,
       date_begin: this.formatDateTime(startDate),
       date_finish: this.formatDateTime(),
-      success_percent: this.results.percentCorrect
+      success_percent: this.results.percentCorrect,
+      attempt_type: this.id_subjects.length == 1 ? 'subject' : 'mix',
     }
 
     axios
@@ -171,7 +178,10 @@ class TestingComponent extends Vue {
     return 'danger'
   }
 
-
+  get subjectsNames() {
+    return this.subjectsStore.list
+      .filter(el => this.id_subjects.includes(el.id))
+  }
 
 
   private totalTime: number = 0;
@@ -230,6 +240,9 @@ export default TestingComponent;
 <template>
   <div class="container">
     <main class="questions-main">
+      <div style="padding-bottom: 4em;">
+        <h2 v-for="subject in subjectsNames" :key="subject.id" style="border-bottom: 1px solid gray;">{{ subject.name_subject }}</h2>
+      </div>
       <QuestionComponent v-for="(qData, index) in questions" :key="qData.id" :qData="qData" :index="index" :showResults="showResults" @answer-submitted="handleAnswerSubmitted" :id="`question-${index}`"></QuestionComponent>
 
       <div class="results-section" v-if="showResults">
@@ -238,6 +251,7 @@ export default TestingComponent;
           <el-tag :type="getTagType(results.percentCorrect)" effect="dark">
             {{ results.percentCorrect }}%
           </el-tag>
+          <small><span v-for="subject in subjectsNames" :key="subject.id" style="display: inline-block; padding-left: 1em;">{{ subject.name_short }}</span></small>
         </h2>
         <p>Всего вопросов: {{ results.totalQuestions }}</p>
         <p>Отвечено: {{ results.answeredQuestions }}</p>

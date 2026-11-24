@@ -51,7 +51,11 @@ class StudentEnter extends Vue {
         message: "Успешно вошли",
         type: "success",
       } as MessageParams)
-      window.location.replace('/')
+      if (this.profileStore.group.education_level) {
+        window.location.replace('/education-level/' + this.profileStore.group.education_level)
+      } else {
+        window.location.replace('/')
+      }
     } else {
       ElMessage({
         message: loginResult,

@@ -1,8 +1,7 @@
 <script lang="ts">
 import { Options, Vue } from "vue-class-component"
-import { SubjectsStore, QuestionStore, TeachersStore } from "../stores"
+import { ProfileStore, SubjectsStore, QuestionStore, TeachersStore } from "@/stores"
 import type { SubjectInterface } from "@/interfaces/QuestionInterface"
-import { ProfileStore } from "@/stores";
 import axios from "axios"
 import type { AxiosResponse } from "axios"
 
@@ -12,16 +11,35 @@ class EducationLevelComponent extends Vue {
   subjectsStore = SubjectsStore()
   questionStore = QuestionStore()
   teachersStore = TeachersStore()
+  profileStore = ProfileStore()
+
   id_level: number = 0
   studentData: any[] = []
-  latestSubjectPercent: Record<number, number> = {}
+  latestSubjectPercent: Record<string | number, number> = {}
 
   get subjectList() {
     return this.subjectsStore.getSubjects.filter(el => el.education_level == this.id_level)
   }
 
+  get subjectListByAcademicGroup() {
+    return this.subjectList.filter(el => el.semestr <= this.profileStore.group.semestr)
+  }
+
   getSubjectsByTeacher(teacher: number) {
-    return this.subjectList.filter(el => el.teacher == teacher)
+    const filtered = this.subjectListByAcademicGroup.filter(el => el.teacher === teacher)
+    if (filtered.length === 0) {
+      return []
+    }
+    const ids = filtered.map(el => el.id).join(',')
+    return [
+      {
+        id: ids,
+        name_short: 'случайно',
+        name_subject: 'случайно',
+        subject_pdf: null,
+      },
+      ...filtered,
+    ]
   }
 
   get teachers() {
@@ -32,10 +50,10 @@ class EducationLevelComponent extends Vue {
 
 
 
-  handleSetSubject(subjectId: number) {
+  handleSetSubject(subjectId: string | number) {
     this.$router.push({
       name: "show-subject",
-      params: { id: subjectId }
+      params: { id: String(subjectId) }
     })
   }
 
@@ -99,39 +117,49 @@ class EducationLevelComponent extends Vue {
    * Вызывай этот метод после того, как studentsGroupData заполнится данными.
    */
   updateLatestPercent(): void {
-    const result: Record<number, number> = {}
+    const result: Record<string, number> = {}
     const now = new Date()
     const monthAgo = now.getTime() - (7 * 24 * 60 * 60 * 1000)
     const list = this.studentData || []
-    console.log(list)
 
     list.forEach(student => {
       const attempts = student.studentAttempts || []
 
-      attempts.forEach((attempt: any) => {
+      const attemptsPeriod = attempts.filter((attempt: any) => {
         const attemptDate = new Date(attempt.date_begin)
         if (attemptDate.getTime() < monthAgo) {
-          return
+          return false
         }
-        const questions = attempt.studentAttemptQuestions || []
-        const firstQuestion = questions[0]
-        if (!firstQuestion) return
-
-        const question = this.questionStore.getQuestion(firstQuestion.id_question)
-        if (!question?.value?.id_subject) return
-
-        const subjectId = Number(question.value.id_subject)
-        if (isNaN(subjectId)) return
-
-        const percentRaw = attempt.success_percent
-        // На всякий случай нормализуем: если строка — парсим, если уже число — оставляем
-        const percent = typeof percentRaw === 'string' ? Number(percentRaw) : Number(percentRaw)
-
-        if (!isNaN(percent)) {
-          // Перезаписываем: в конце останется процент из самой последней попытки по этому предмету
-          result[subjectId] = percent
-        }
+        return true
       })
+
+      attemptsPeriod
+        // .filter((attempt: any) => attempt.attempt_type === "subject")
+        .forEach((attempt: any) => {
+          let questions = attempt.studentAttemptQuestions || []
+          if (questions.length === 0) {
+            return
+          }
+          if (attempt.attempt_type === "subject") {
+            questions = [questions[0]]
+          }
+          const percentRaw = attempt.success_percent
+          // На всякий случай нормализуем: если строка — парсим, если уже число — оставляем
+          const percent = typeof percentRaw === 'string' ? Number(percentRaw) : Number(percentRaw)
+          const subjectIdsSet = new Set<number>();
+          for (const firstQuestion of questions) {
+            const question = this.questionStore.getQuestion(firstQuestion.id_question)
+            if (!question?.value?.id_subject) continue
+            const subjectId = Number(question.value.id_subject)
+            if (isNaN(subjectId)) continue
+            subjectIdsSet.add(subjectId);
+          }
+          const subjectIds = [...subjectIdsSet].sort((a, b) => a - b).join(",")
+
+          if (!isNaN(percent)) {
+            result[subjectIds] = percent
+          }
+        })
     })
 
     this.latestSubjectPercent = result
@@ -148,7 +176,6 @@ class EducationLevelComponent extends Vue {
       const response: AxiosResponse<any> = await axios.get('/analytic/student-summary', {
         params: { id: user.id }
       })
-      console.log(response.data)
       this.studentData = response.data
       this.updateLatestPercent()
     } catch (error) {

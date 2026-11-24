@@ -65,6 +65,7 @@ export interface SubjectInterface {
   enabled: number
   education_level: number
   teacher: number | null
+  semestr: number
   subject_pdf: string
 }
 

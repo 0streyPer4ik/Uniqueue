@@ -4,7 +4,7 @@
       <el-icon>
         <User />
       </el-icon>
-      {{ profileStore.fio }}
+      {{ profileStore.fio }}, {{ profileStore.group.name }}
     </el-button>
     <el-button v-if="profileStore.hasRoleAdmin" @click="showStatistics" type="warning">
       <el-icon>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, watch, reactive } from "vue"
+import { ref, onMounted, computed, watch, reactive, markRaw } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import type { MessageParams } from "element-plus"
 import { GroupsStore, QuestionStore, SubjectsStore, TeachersStore } from "../stores"
@@ -17,7 +17,7 @@ const groupStore = GroupsStore()
 const teacherStore = TeachersStore()
 
 const groupId = ref<number | null>(null)
-const dates = ref(["2026-01-01", "2030-01-01"])
+const dates = ref(["2026-09-01", "2030-01-01"])
 const calculationMethod = ref("bestScore")
 const selectedStudentId = ref<number>(0)
 
@@ -32,14 +32,13 @@ const studentsGroupData = computed((): StudentInterface[] => {
   if (groupId.value === null || !studentsGroupsData[groupId.value]) {
     return []
   }
+  const startDate = dates.value[0]
+  const endDate = dates.value[1]
   return studentsGroupsData[groupId.value].list.map(student => {
     return {
       ...student,
       studentAttempts: student.studentAttempts.filter(attempt => {
         const attemptDate = attempt.date_finish.split(' ')[0]
-        const startDate = dates.value[0]
-        const endDate = dates.value[1]
-        console.log(startDate, "\n", attemptDate, "\n", endDate, "\n", "\n")
         return attemptDate >= startDate && attemptDate <= endDate
       })
     }
@@ -117,12 +116,16 @@ const calculateSubjectStats = (attempts: StudentAttemptInterface[]): Record<stri
 
     const question = questionStore.getQuestion(attemptQuestion.id_question)
     if (question.value && question.value.id_subject) {
-      const subjectId = question.value.id_subject
+      let subjectId = question.value.id_subject
+
+      if (attempt.attempt_type === "mix") {
+        subjectId = -(subjectStore.getSubject(subjectId)?.teacher ?? 0)
+      }
+
       if (!subjects[subjectId]) {
         subjects[subjectId] = []
       }
       subjects[subjectId].push(attempt)
-
       if (!stats[subjectId]) {
         stats[subjectId] = {
           bestResult: '-',
@@ -210,7 +213,7 @@ const tableData = computed(() => {
 })
 
 interface SubjectInfo {
-  id: number
+  subjectId: number
   name: string
   code?: string
   studentCount: number
@@ -249,7 +252,7 @@ const usingSubjectsList = computed(() => {
     const worstResult = successPercents.length > 0 ? Math.min(...successPercents) : 0
 
     subjects.push({
-      id: subjectId,
+      subjectId: subjectId,
       name: subjectFromStore?.name_short || `Предмет ${subjectId}`,
       studentCount,
       totalAttempts,
@@ -273,11 +276,22 @@ const usingSubjectsListGroupedByTeacher = computed(() => {
 
   teacherStore.list.forEach(teacher => {
     const teacherSubjects = subjects.filter(subject => {
-      const subjectFromStore = subjectStore.getSubject(subject.id)
+      const subjectFromStore = subjectStore.getSubject(subject.subjectId)
       return subjectFromStore?.teacher === teacher.teacher_id
     })
 
     if (teacherSubjects.length > 0) {
+
+      // const teacherSubjectsIds = teacherSubjects.map(subject => parseInt(subject.subjectId)).sort((a, b) => a - b).join(",")
+      teacherSubjects.unshift({
+        subjectId: -teacher.teacher_id,
+        name: "случайно",
+        studentCount: 0,
+        totalAttempts: 0,
+        averageSuccess: 0,
+        bestResult: 0,
+        worstResult: 0,
+      })
       groupedByTeacher.push({
         teacher,
         subjects: teacherSubjects
@@ -310,7 +324,7 @@ const loadData = async () => {
     const response = await axios.get('/analytic/student-group-summary', {
       params: { group_id: groupId.value }
     })
-    studentsGroupItem.list = response.data
+    studentsGroupItem.list = markRaw(response.data)
   } catch (err) {
     console.log(err)
     ElMessage({
@@ -366,12 +380,14 @@ const getCellClassName = ({ row, column }: { row: StudentInterface; column: any 
   if (row.attemptsLabels) {
     return 'attempts-labels'
   }
-  const subject = usingSubjectsList.value.find(s => s.name === column.label)
-  if (!subject) return ''
-
-  const addClass = (row.subjects?.[subject.id]?.length || 0) > 1 ? ' attempts-indicator' : ''
-  const stat = getStat(row.subjects?.[subject.id] || [])
+  if (!column.columnKey?.startsWith('subject-')) {
+    return
+  }
+  const subjectId = Number(column.columnKey.replace('subject-', ''))
+  const addClass = (row.subjects?.[subjectId]?.length || 0) > 1 ? ' attempts-indicator' : ''
+  const stat = getStat(row.subjects?.[subjectId] || [])
   const percent = parseFloat(stat.best)
+
   if (isNaN(percent)) return 'no-data-cell'
   if (percent >= 90) return 'success' + addClass
   if (percent >= 75) return 'warning' + addClass
@@ -478,15 +494,15 @@ onMounted(() => {
       </el-table-column>
 
       <el-table-column :label="teachersSubjects.teacher.f" align="left" v-for="teachersSubjects in usingSubjectsListGroupedByTeacher" :key="teachersSubjects.teacher.teacher_id">
-        <el-table-column :label="subject.name" align="center" v-for="subject in teachersSubjects.subjects" :key="subject.id" width="70">
+        <el-table-column :label="subject.name" :column-key="`subject-${subject.subjectId}`" align="center" v-for="subject in teachersSubjects.subjects" :key="subject.subjectId" width="70">
           <template #default="scope">
             <div v-if="scope.row.attemptsLabels">
-              <el-tag v-for="attempt in scope.row.subjects[subject.id]" :key="attempt.id" :type="getSuccessTagType(attempt.success_percent)">
+              <el-tag v-for="attempt in scope.row.subjects[subject.subjectId]" :key="attempt.id" :type="getSuccessTagType(attempt.success_percent)" :title="attempt.id">
                 {{ attempt.success_percent }}%
               </el-tag>
             </div>
-            <div v-else-if="scope.row.subjects[subject.id]" :data-attempts="scope.row.subjects[subject.id].length">
-              {{ getStat(scope.row.subjects[subject.id]).best }}%
+            <div v-else-if="scope.row.subjects[subject.subjectId]" :data-attempts="scope.row.subjects[subject.subjectId].length">
+              {{ getStat(scope.row.subjects[subject.subjectId]).best }}%
             </div>
           </template>
         </el-table-column>

@@ -47,6 +47,7 @@ class QuestionType4Component extends Vue {
 
   mounted() {
     this.$nextTick(() => {
+      this.qData.userAnswer = ""
       const correctAnswer = this.getCorrectAnswer();
       const length = correctAnswer.length;
       this.inputWidth = `${Math.min(300, Math.max(150, length * 8))}px`;
